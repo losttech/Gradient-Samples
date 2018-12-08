@@ -16,13 +16,14 @@
         readonly PythonList<dynamic> cells = new PythonList<dynamic>();
         readonly dynamic cell;
         readonly dynamic inputData;
-        readonly dynamic initialState;
-        readonly dynamic train_op;
+        internal readonly dynamic initialState;
+        internal readonly dynamic trainOp;
         readonly dynamic logits;
         readonly dynamic loss;
-        readonly dynamic cost;
-        readonly Either<PythonFunctionContainer, IEnumerable<dynamic>>? finalState;
+        internal readonly dynamic cost;
+        internal readonly Either<PythonFunctionContainer, IEnumerable<dynamic>>? finalState;
         readonly dynamic probs;
+        internal readonly Variable lr;
 
         public CharRNNModel(CharRNNModelParameters parameters, bool training = true) {
             this.parameters = parameters ?? throw new ArgumentNullException(nameof(parameters));
@@ -85,20 +86,20 @@
             });
             this.cost = cost;
             var finalState = lastState;
-            var lr = new Variable(0.0, trainable: false);
+            this.lr = new Variable(0.0, trainable: false);
             var tvars = tf.trainable_variables();
 
             var (grads, _) = tf.clip_by_global_norm(tf.gradients(this.cost, tvars), parameters.GradientClip);
             AdamOptimizer optimizer = null;
-            new name_scope("optimizer").UseSelf(_ => optimizer = new AdamOptimizer(lr));
-            this.train_op = optimizer.apply_gradients(grads.Zip(tvars, (g,v) => (dynamic)(g,v)));
+            new name_scope("optimizer").UseSelf(_ => optimizer = new AdamOptimizer(this.lr));
+            this.trainOp = optimizer.apply_gradients(grads.Zip(tvars, (g,v) => (dynamic)(g,v)));
 
             tf.summary.histogram("logits", this.logits);
             tf.summary.histogram("loss", this.loss);
             tf.summary.histogram("train_loss", this.cost);
         }
 
-        dynamic Sample(Session session, dynamic chars, dynamic vocabulary, int num = 200, string prime = "The ", int samplingType = 1) {
+        public string Sample(Session session, dynamic chars, dynamic vocabulary, int num = 200, string prime = "The ", int samplingType = 1) {
             dynamic state = CreateInitialState(session, vocabulary, prime);
 
             int WeightedPick(IEnumerable<double> weights) {

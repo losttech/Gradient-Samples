@@ -9,6 +9,7 @@
 
   <ItemGroup>
     <PackageReference Include="Gradient" Version="0.1.10-tech-preview0" />
+    <PackageReference Include="Newtonsoft.Json" Version="12.0.1" />
   </ItemGroup>
 
 </Project>
