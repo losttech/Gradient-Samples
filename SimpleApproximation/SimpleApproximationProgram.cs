@@ -5,7 +5,7 @@
     using tensorflow;
     using tensorflow.train;
 
-    class SimpleApproximationProgram {
+    static class SimpleApproximationProgram {
         const int x0 = 10, x1 = 20;
         const int testSize = 2000;
         const int iterations = 1000;
