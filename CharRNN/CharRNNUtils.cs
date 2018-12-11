@@ -12,12 +12,14 @@
         readonly int batchSize;
         readonly int seqLength;
         readonly Encoding encoding;
-        readonly dynamic tensor;
-        Dictionary<char, int> vocabulary;
-        IEnumerable<char> chars;
+        dynamic tensor;
+        internal readonly Dictionary<char, int> vocabulary;
+        internal readonly IEnumerable<char> chars;
         internal int vocabularySize;
         internal int batchCount;
         int pointer;
+        dynamic x_batches;
+        dynamic y_batches;
 
         public TextLoader(string dataDir, int batchSize, int seqLength, Encoding encoding = null) {
             this.dataDir = dataDir;
@@ -31,28 +33,30 @@
 
             if (!(File.Exists(vocabularyFile) && File.Exists(tensorFile))) {
                 Console.WriteLine("reading text file");
-                this.tensor = this.Preprocess(inputFile, vocabularyFile, tensorFile);
+                this.tensor = this.Preprocess(inputFile, vocabularyFile, tensorFile, out this.chars, out this.vocabulary);
             } else {
                 Console.WriteLine("loading preprocessed files");
-                this.tensor = this.LoadPreprocessed(vocabularyFile, tensorFile);
+                this.tensor = this.LoadPreprocessed(vocabularyFile, tensorFile, out this.chars, out this.vocabulary);
             }
         }
 
-        ndarray Preprocess(string inputFile, string vocabularyFile, string tensorFile) {
+        ndarray Preprocess(string inputFile, string vocabularyFile, string tensorFile,
+            out IEnumerable<char> chars, out Dictionary<char, int> vocabulary) {
             string data = File.ReadAllText(inputFile, this.encoding);
-            var counter = new Dictionary<char, int>(count chars in data);
-            this.chars = counter.OrderByDescending(p => p.Value).Select(kv => kv.Key);
+            var counter = Counts(data);
+            chars = counter.OrderByDescending(p => p.Value).Select(kv => kv.Key);
             this.vocabularySize = chars.Count();
-            this.vocabulary = this.chars.Select((chr, i) => (chr, i)).ToDictionary(i => i.chr, i => i.i);
+            vocabulary = this.chars.Select((chr, i) => (chr, i)).ToDictionary(i => i.chr, i => i.i);
             File.WriteAllText(vocabularyFile, JsonConvert.SerializeObject(this.chars));
             var tensor = np.array(data.Select(c => this.vocabulary[c]));
             np.save(tensorFile, tensor);
             return tensor;
         }
-        ndarray LoadPreprocessed(string vocabularyFile, string tensorFile) {
-            this.chars = JsonConvert.DeserializeObject<IEnumerable<char>>(File.ReadAllText(vocabularyFile));
+        ndarray LoadPreprocessed(string vocabularyFile, string tensorFile,
+            out IEnumerable<char> chars, out Dictionary<char, int> vocabulary) {
+            chars = JsonConvert.DeserializeObject<IEnumerable<char>>(File.ReadAllText(vocabularyFile));
             this.vocabularySize = this.chars.Count();
-            this.vocabulary = this.chars.Select((chr, i) => (chr, i)).ToDictionary(i => i.chr, i => i.i);
+            vocabulary = this.chars.Select((chr, i) => (chr, i)).ToDictionary(i => i.chr, i => i.i);
             var tensor = np.load(tensorFile);
             this.batchCount = (int)(tensor.size / (this.batchSize * this.seqLength));
             return tensor;
@@ -79,6 +83,16 @@
         }
         internal void ResetBatchPointer() {
             this.pointer = 0;
+        }
+
+        static Dictionary<TValue, int> Counts<TValue>(IEnumerable<TValue> enumerable) {
+            var result = new Dictionary<TValue, int>();
+            foreach (TValue value in enumerable) {
+                result.TryGetValue(value, out int count);
+                count++;
+                result[value] = count;
+            }
+            return result;
         }
     }
 }

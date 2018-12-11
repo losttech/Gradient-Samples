@@ -2,6 +2,7 @@
     using System;
     using System.Collections.Generic;
     using System.Linq;
+    using CommandLine;
     using Gradient;
     using SharPy.Runtime;
     using tensorflow;
@@ -15,7 +16,7 @@
         readonly Func<int, RNNCell> cellFactory;
         readonly PythonList<dynamic> cells = new PythonList<dynamic>();
         readonly dynamic cell;
-        readonly dynamic inputData;
+        internal readonly dynamic inputData;
         internal readonly dynamic initialState;
         internal readonly dynamic trainOp;
         readonly dynamic logits;
@@ -23,6 +24,7 @@
         internal readonly dynamic cost;
         internal readonly Either<PythonFunctionContainer, IEnumerable<dynamic>>? finalState;
         readonly dynamic probs;
+        internal readonly dynamic targets;
         internal readonly Variable lr;
 
         public CharRNNModel(CharRNNModelParameters parameters, bool training = true) {
@@ -45,16 +47,16 @@
             }
             this.cell = this.cell = new MultiRNNCell(this.cells, state_is_tuple: true);
             var inputData = tf.placeholder(tf.int32, new TensorShape(parameters.BatchSize, parameters.SeqLength));
-            var targets = tf.placeholder(tf.int32, new TensorShape(parameters.BatchSize, parameters.SeqLength));
+            this.targets = tf.placeholder(tf.int32, new TensorShape(parameters.BatchSize, parameters.SeqLength));
             var initialState = this.cell.zero_state(parameters.BatchSize, parameters.SeqLength);
 
-            dynamic softmax_W = null, softmax_b = null;
+            Variable softmax_W = null, softmax_b = null;
             new variable_scope("rnnlm").UseSelf(_ => {
                 softmax_W = tf.get_variable("softmax_w", new TensorShape(parameters.RNNSize, parameters.VocabularySize));
                 softmax_b = tf.get_variable("softmax_b", new TensorShape(parameters.VocabularySize));
             });
 
-            var embedding = tf.get_variable("embedding", new TensorShape(parameters.VocabularySize, parameters.RNNSize));
+            Variable embedding = tf.get_variable("embedding", new TensorShape(parameters.VocabularySize, parameters.RNNSize));
             var inputs = tf.nn.embedding_lookup(embedding, inputData);
 
             // dropout beta testing: double check which one should affect next line
@@ -62,7 +64,8 @@
                 inputs = tf.nn.dropout(inputs, parameters.KeepOutputProbability);
 
             inputs = tf.split(inputs, parameters.SeqLength, 1);
-            inputs = new PythonList<dynamic>(Enumerable.Select(inputs, i => tf.squeeze(i, 1)));
+            inputs = new PythonList<dynamic>(Enumerable.Select(inputs,
+                new Func<Tensor, Tensor>(i => tf.squeeze(i, 1))));
 
             dynamic Loop(dynamic prev, dynamic _) {
                 prev = tf.matmul(prev, softmax_W) + softmax_b;
@@ -70,11 +73,11 @@
                 return tf.nn.embedding_lookup(embedding, prevSymbol);
             }
             var (outputs, lastState) = tensorflow.contrib.legacy_seq2seq.rnn_decoder.rnn_decoder_(inputs, initialState, this.cell,
-                loop_function: training ? null : Loop, scope: "rnnlm");
+                loop_function: training ? null : new Func<dynamic, dynamic, dynamic>(Loop), scope: "rnnlm");
             var output = tf.reshape(tf.concat(outputs, 1), new TensorShape(-1, parameters.RNNSize));
 
             this.logits = tf.matmul(output, softmax_W) + softmax_b;
-            var probs = tf.nn.softmax(this.logits);
+            this.probs = tf.nn.softmax(this.logits);
             this.loss = tensorflow.contrib.legacy_seq2seq.sequence_loss_by_example.sequence_loss_by_example_(
                 this.logits,
                 tf.reshape(targets, new TensorShape(-1)),
@@ -85,7 +88,7 @@
                 cost = tf.reduce_sum(this.loss) / parameters.BatchSize / parameters.SeqLength;
             });
             this.cost = cost;
-            var finalState = lastState;
+            this.finalState = lastState;
             this.lr = new Variable(0.0, trainable: false);
             var tvars = tf.trainable_variables();
 
@@ -168,19 +171,27 @@
     }
 
     class CharRNNModelParameters {
+        [Option("type", Default = ModelType.LSTM)]
         public ModelType ModelType { get; set; }
+        [Option("batch", Default = 50)]
         public int BatchSize { get; set; }
+        [Option("seq-len", Default = 50, HelpText = "RNN sequence length. Number of timesteps to unroll for.")]
         public int SeqLength { get; set; }
+        [Option("layers", Default = 2)]
         public int LayerCount { get; set; }
+        [Option("rnn-size", Default = 128, HelpText = "size of RNN hidden state")]
         public int RNNSize { get; set; }
         public int VocabularySize { get; set; }
 
+        [Option("keep-in-prob", Default = 0)]
         public double KeepInputProbability { get; set; }
+        [Option("keep-out-prob", Default = 0)]
         public double KeepOutputProbability { get; set; }
+        [Option('c', "gradient-clip", Default = 5)]
         public double GradientClip { get; internal set; }
     }
 
-    enum ModelType {
+    public enum ModelType {
         RNN,
         GRU,
         LSTM,

@@ -4,7 +4,7 @@
     using tensorflow.summary;
 
     static class BasicMathProgram {
-        static void Main(string[] args) {
+        static void Main() {
             var a = new dynamic[] { tf.constant(5.0, name: "a") };
             var b = new dynamic[] { tf.constant(10.0, name: "b") };
 
