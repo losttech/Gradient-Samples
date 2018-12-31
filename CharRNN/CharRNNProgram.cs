@@ -8,7 +8,6 @@
     using Newtonsoft.Json;
     using SharPy.Runtime;
     using tensorflow;
-    using tensorflow.python.client.session;
     using tensorflow.summary;
     using tensorflow.train;
 
@@ -17,6 +16,7 @@
         const string CharsVocabularyFileName = "chars_vocab";
 
         static int Main(string[] args) {
+            throw new NotImplementedException("Work in progress");
             // ported from https://github.com/sherjilozair/char-rnn-tensorflow
             return Parser.Default.ParseArguments<CharRNNTrainingParameters>(args)
                 .MapResult(Train, errors => 1);
@@ -76,7 +76,7 @@
                 for (int e = 0; e < args.epochs; e++) {
                     session.run(tf.assign(model.lr, new dynamic[] { args.learningRate * Math.Pow(args.decayRate, e) }));
                     dataLoader.ResetBatchPointer();
-                    var state = session.run(model.initialState);
+                    var state = session.run(model.initialState.Cast<object>());
                     var stopwatch = Stopwatch.StartNew();
                     for (int b = 0; b < dataLoader.batchCount; b++) {
                         stopwatch.Restart();

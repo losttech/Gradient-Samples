@@ -5,6 +5,7 @@
     using CommandLine;
     using Gradient;
     using SharPy.Runtime;
+    using numpy;
     using tensorflow;
     using tensorflow.contrib.optimizer_v2.adam;
     using tensorflow.contrib.rnn;
@@ -15,14 +16,14 @@
         readonly CharRNNModelParameters parameters;
         readonly Func<int, RNNCell> cellFactory;
         readonly PythonList<dynamic> cells = new PythonList<dynamic>();
-        readonly dynamic cell;
+        readonly RNNCell cell;
         internal readonly dynamic inputData;
-        internal readonly dynamic initialState;
+        internal readonly IEnumerable<ValueTuple<dynamic, ValueTuple<dynamic, dynamic>>> initialState;
         internal readonly dynamic trainOp;
         readonly dynamic logits;
         readonly dynamic loss;
         internal readonly dynamic cost;
-        internal readonly Either<PythonFunctionContainer, IEnumerable<dynamic>>? finalState;
+        internal readonly IEnumerable<dynamic> finalState;
         readonly dynamic probs;
         internal readonly dynamic targets;
         internal readonly Variable lr;
@@ -48,7 +49,7 @@
             this.cell = this.cell = new MultiRNNCell(this.cells, state_is_tuple: true);
             var inputData = tf.placeholder(tf.int32, new TensorShape(parameters.BatchSize, parameters.SeqLength));
             this.targets = tf.placeholder(tf.int32, new TensorShape(parameters.BatchSize, parameters.SeqLength));
-            var initialState = this.cell.zero_state(parameters.BatchSize, parameters.SeqLength);
+            this.initialState = this.cell.zero_state(parameters.BatchSize, tf.float32);
 
             Variable softmax_W = null, softmax_b = null;
             new variable_scope("rnnlm").UseSelf(_ => {
@@ -72,16 +73,18 @@
                 var prevSymbol = tf.stop_gradient(tf.argmax(prev, 1));
                 return tf.nn.embedding_lookup(embedding, prevSymbol);
             }
-            var (outputs, lastState) = tensorflow.contrib.legacy_seq2seq.rnn_decoder.rnn_decoder_(inputs, initialState, this.cell,
-                loop_function: training ? null : new Func<dynamic, dynamic, dynamic>(Loop), scope: "rnnlm");
+            var decoder = tensorflow.contrib.legacy_seq2seq.legacy_seq2seq.rnn_decoder(inputs, initialState.Cast<dynamic>().ToPythonList(), this.cell,
+                loop_function: training ? null : PythonFunctionContainer.Of(new Func<dynamic, dynamic, dynamic>(Loop)), scope: "rnnlm");
+            var outputs = decoder[0];
+            var lastState = decoder[1];
             var output = tf.reshape(tf.concat(outputs, 1), new TensorShape(-1, parameters.RNNSize));
 
             this.logits = tf.matmul(output, softmax_W) + softmax_b;
             this.probs = tf.nn.softmax(this.logits);
-            this.loss = tensorflow.contrib.legacy_seq2seq.sequence_loss_by_example.sequence_loss_by_example_(
+            this.loss = tensorflow.contrib.legacy_seq2seq.legacy_seq2seq.sequence_loss_by_example(
                 this.logits,
                 tf.reshape(targets, new TensorShape(-1)),
-                tf.ones(new Dimension(parameters.BatchSize * parameters.SeqLength)));
+                new PythonList<dynamic>{ tf.ones(new Dimension(parameters.BatchSize * parameters.SeqLength)) });
 
             dynamic cost = null;
             new name_scope("cost").UseSelf(_ => {
@@ -92,7 +95,7 @@
             this.lr = new Variable(0.0, trainable: false);
             var tvars = tf.trainable_variables();
 
-            var (grads, _) = tf.clip_by_global_norm(tf.gradients(this.cost, tvars), parameters.GradientClip);
+            IEnumerable<object> grads = tf.clip_by_global_norm(tf.gradients(this.cost, tvars), parameters.GradientClip).Item1;
             AdamOptimizer optimizer = null;
             new name_scope("optimizer").UseSelf(_ => optimizer = new AdamOptimizer(this.lr));
             this.trainOp = optimizer.apply_gradients(grads.Zip(tvars, (g,v) => (dynamic)(g,v)));
@@ -115,7 +118,7 @@
             var ret = prime;
             var chr = prime.Last();
             for (int i = 0; i < num; i++) {
-                var x = np.zeroes((1, 1));
+                var x = np.zeros(new TensorShape(1, 1));
                 x[0, 0] = vocabulary[chr];
                 var feed = new PythonDict<dynamic, dynamic> {
                     [this.inputData] = x,
@@ -124,17 +127,17 @@
                 var outputs = session.run(new dynamic[] { this.probs, this.finalState }, feed);
                 var probs = outputs[0];
                 state = outputs[1];
-                var p = probs[0];
+                ndarray p = probs[0];
 
                 dynamic sample;
                 switch (samplingType) {
                 case 1:
                 case 2 when chr == ' ':
-                    sample = WeightedPick(p);
+                    sample = WeightedPick(p.Cast<double>());
                     break;
                 case 0:
                 case 2:
-                    sample = np.argmax(p);
+                    sample = p.argmax();
                     break;
                 default:
                     throw new NotSupportedException();
@@ -150,7 +153,7 @@
         private dynamic CreateInitialState(Session session, dynamic vocabulary, string prime) {
             var state = session.run(this.cell.zero_state(1, tf.float32));
             foreach (var chr in prime.Substring(0, prime.Length - 1)) {
-                var x = np.zeroes((1, 1));
+                var x = np.zeros(new TensorShape(1, 1));
                 x[0, 0] = vocabulary[chr];
                 var feed = new PythonDict<dynamic, dynamic> {
                     [this.inputData] = x,

@@ -6,6 +6,7 @@
     using System.Text;
     using Newtonsoft.Json;
     using numpy;
+    using SharPy.Runtime;
 
     class TextLoader {
         readonly string dataDir;
@@ -57,7 +58,7 @@
             chars = JsonConvert.DeserializeObject<IEnumerable<char>>(File.ReadAllText(vocabularyFile));
             this.vocabularySize = this.chars.Count();
             vocabulary = this.chars.Select((chr, i) => (chr, i)).ToDictionary(i => i.chr, i => i.i);
-            var tensor = np.load(tensorFile);
+            var tensor = (ndarray)np.load(tensorFile);
             this.batchCount = (int)(tensor.size / (this.batchSize * this.seqLength));
             return tensor;
         }
@@ -68,12 +69,12 @@
 
             // TODO implement and use C# 8 indexing here
             this.tensor = this.tensor[..this.batchCount * this.batchSize * this.seqLength];
-            var xdata = this.tensor;
-            var ydata = np.copy(this.tensor);
+            _ArrayLike xdata = this.tensor;
+            _ArrayLike ydata = np.copy(this.tensor);
             ydata[..-1] = xdata[1..];
             ydata[-1] = xdata[0];
-            this.x_batches = np.split(xdata.reshape(this.batchSize, -1), this.batchCount, 1);
-            this.y_batches = np.split(ydata.reshape(this.batchSize, -1), this.batchCount, 1);
+            this.x_batches = np.split((ndarray)xdata.reshape((this.batchSize, -1)), new PythonList<object> { this.batchCount }, 1);
+            this.y_batches = np.split((ndarray)ydata.reshape((this.batchSize, -1)), new PythonList<object> { this.batchCount }, 1);
         }
         public ValueTuple<dynamic, dynamic> NextBatch() {
             var x = this.x_batches[this.pointer];
