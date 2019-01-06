@@ -21,9 +21,5 @@
         public double learningRate { get; set; }
         [Option("decay-rate", Default = 0.97)]
         public  double decayRate { get; set; }
-
-        public CharRNNTrainingParameters() {
-            throw new NotImplementedException();
-        }
     }
 }

@@ -5,6 +5,7 @@
     using System.IO;
     using System.Linq;
     using CommandLine;
+    using Gradient;
     using Newtonsoft.Json;
     using SharPy.Runtime;
     using tensorflow;
@@ -16,26 +17,29 @@
         const string CharsVocabularyFileName = "chars_vocab";
 
         static int Main(string[] args) {
-            throw new NotImplementedException("Work in progress");
             // ported from https://github.com/sherjilozair/char-rnn-tensorflow
-            return Parser.Default.ParseArguments<CharRNNTrainingParameters>(args)
-                .MapResult(Train, errors => 1);
+            return Parser.Default.ParseArguments<CharRNNTrainingParameters, CharRNNSamplingParameters>(args)
+                .MapResult(
+                (CharRNNTrainingParameters train) => Train(train),
+                (CharRNNSamplingParameters sample) => Sample(sample),
+                _ => 1);
         }
 
-        static void Sample(string saveDir, string prime) {
-            var savedArgs = JsonConvert.DeserializeObject<CharRNNModelParameters>(File.ReadAllText(Path.Combine(saveDir, ConfigFileName)));
-            var (chars, vocabulary) = LoadCharsVocabulary(Path.Combine(saveDir, CharsVocabularyFileName));
-            prime = string.IsNullOrEmpty(prime) ? chars[0].ToString() : prime;
+        static int Sample(CharRNNSamplingParameters args) {
+            var savedArgs = JsonConvert.DeserializeObject<CharRNNModelParameters>(File.ReadAllText(Path.Combine(args.saveDir, ConfigFileName)));
+            var (chars, vocabulary) = LoadCharsVocabulary(Path.Combine(args.saveDir, CharsVocabularyFileName));
+            string prime = string.IsNullOrEmpty(args.prime) ? chars[0].ToString() : args.prime;
             var model = new CharRNNModel(savedArgs, training: false);
             new Session().UseSelf(session => {
                 tf.global_variables_initializer().run();
                 var saver = new Saver(tf.global_variables());
-                var checkpoint = tf.train.get_checkpoint_state(saveDir);
+                var checkpoint = tf.train.get_checkpoint_state(args.saveDir);
                 if (checkpoint?.model_checkpoint_path != null) {
                     saver.restore(session, checkpoint.model_checkpoint_path);
-                    Console.WriteLine(model.Sample(session, chars, vocabulary, prime: prime));
+                    Console.WriteLine(model.Sample(session, chars, vocabulary, prime: prime, num: args.count));
                 }
             });
+            return 0;
         }
 
         static int Train(CharRNNTrainingParameters args) {
@@ -65,18 +69,19 @@
 
             new Session().UseSelf(session => {
                 var summaries = tf.summary.merge_all();
-                var writer = new FileWriter(Path.Combine(args.logDir, DateTime.Now.ToString("s")));
+                var writer = new FileWriter(Path.Combine(args.logDir, DateTime.Now.ToString("s").Replace(':', '-')));
                 writer.add_graph(session.graph);
 
                 session.run(new dynamic[] { tf.global_variables_initializer() });
-                var saver = new Saver(tf.global_variables());
+                var globals = tf.global_variables();
+                var saver = new Saver(globals);
                 if (checkpoint != null)
                     saver.restore(session, checkpoint);
 
                 for (int e = 0; e < args.epochs; e++) {
-                    session.run(tf.assign(model.lr, new dynamic[] { args.learningRate * Math.Pow(args.decayRate, e) }));
+                    session.run(new[] { tf.assign(model.lr, tf.constant(args.learningRate * Math.Pow(args.decayRate, e))) });
                     dataLoader.ResetBatchPointer();
-                    var state = session.run(model.initialState.Cast<object>());
+                    var state = session.run(model.initialState.Items().Cast<object>());
                     var stopwatch = Stopwatch.StartNew();
                     for (int b = 0; b < dataLoader.batchCount; b++) {
                         stopwatch.Restart();
@@ -85,9 +90,9 @@
                             [model.inputData] = x,
                             [model.targets] = y,
                         };
-                        foreach (var (i, (c, h)) in model.initialState) {
-                            feed[c] = state[i].c;
-                            feed[h] = state[i].h;
+                        foreach (var (i, tuple) in model.initialState.Items().Enumerate()) {
+                            feed[tuple.c] = state[i].c;
+                            feed[tuple.h] = state[i].h;
                         }
 
                         var step = session.run(new dynamic[] { summaries, model.cost, model.finalState, model.trainOp }, feed);
@@ -105,7 +110,7 @@
                     }
                 }
             });
-            return 1;
+            return 0;
         }
 
         static (List<char>, Dictionary<char, int>) LoadCharsVocabulary(string path)

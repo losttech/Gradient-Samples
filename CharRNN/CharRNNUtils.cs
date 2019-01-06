@@ -9,7 +9,6 @@
     using SharPy.Runtime;
 
     class TextLoader {
-        readonly string dataDir;
         readonly int batchSize;
         readonly int seqLength;
         readonly Encoding encoding;
@@ -23,7 +22,6 @@
         dynamic y_batches;
 
         public TextLoader(string dataDir, int batchSize, int seqLength, Encoding encoding = null) {
-            this.dataDir = dataDir;
             this.batchSize = batchSize;
             this.seqLength = seqLength;
             this.encoding = encoding ?? Encoding.UTF8;
@@ -39,6 +37,8 @@
                 Console.WriteLine("loading preprocessed files");
                 this.tensor = this.LoadPreprocessed(vocabularyFile, tensorFile, out this.chars, out this.vocabulary);
             }
+            this.CreateBatches();
+            this.ResetBatchPointer();
         }
 
         ndarray Preprocess(string inputFile, string vocabularyFile, string tensorFile,
@@ -53,12 +53,12 @@
             np.save(tensorFile, tensor);
             return tensor;
         }
-        ndarray LoadPreprocessed(string vocabularyFile, string tensorFile,
+        _ArrayLike LoadPreprocessed(string vocabularyFile, string tensorFile,
             out IEnumerable<char> chars, out Dictionary<char, int> vocabulary) {
             chars = JsonConvert.DeserializeObject<IEnumerable<char>>(File.ReadAllText(vocabularyFile));
             this.vocabularySize = this.chars.Count();
             vocabulary = this.chars.Select((chr, i) => (chr, i)).ToDictionary(i => i.chr, i => i.i);
-            var tensor = (ndarray)np.load(tensorFile);
+            var tensor = np.load(tensorFile);
             this.batchCount = (int)(tensor.size / (this.batchSize * this.seqLength));
             return tensor;
         }
@@ -71,10 +71,10 @@
             this.tensor = this.tensor[..this.batchCount * this.batchSize * this.seqLength];
             _ArrayLike xdata = this.tensor;
             _ArrayLike ydata = np.copy(this.tensor);
-            ydata[..-1] = xdata[1..];
-            ydata[-1] = xdata[0];
-            this.x_batches = np.split((ndarray)xdata.reshape((this.batchSize, -1)), new PythonList<object> { this.batchCount }, 1);
-            this.y_batches = np.split((ndarray)ydata.reshape((this.batchSize, -1)), new PythonList<object> { this.batchCount }, 1);
+            ydata[..^1] = xdata[1..];
+            ydata[^1] = xdata[0];
+            this.x_batches = np.split((ndarray)xdata.reshape((this.batchSize, -1)), this.batchCount, 1);
+            this.y_batches = np.split((ndarray)ydata.reshape((this.batchSize, -1)), this.batchCount, 1);
         }
         public ValueTuple<dynamic, dynamic> NextBatch() {
             var x = this.x_batches[this.pointer];

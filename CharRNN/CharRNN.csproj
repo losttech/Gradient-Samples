@@ -15,7 +15,7 @@
 
   <ItemGroup>
     <PackageReference Include="CommandLineParser" Version="2.3.0" />
-    <PackageReference Include="Gradient" Version="0.1.10-tech-preview0" Condition="!Exists('..\..\Gradient\lib\Gradient.csproj')" />
+    <PackageReference Include="Gradient" Version="0.1.10-tech-preview1" Condition="!Exists('..\..\Gradient\lib\Gradient.csproj')" />
     <ProjectReference Include="..\..\Gradient\lib\Gradient.csproj" Condition="Exists('..\..\Gradient\lib\Gradient.csproj')" />
     <PackageReference Include="Newtonsoft.Json" Version="12.0.1" />
   </ItemGroup>
