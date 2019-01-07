@@ -85,7 +85,7 @@
             this.loss = tensorflow.contrib.legacy_seq2seq.legacy_seq2seq.sequence_loss_by_example(
                 new[] { this.logits },
                 new[] { tf.reshape(targets, new[] { -1 }) },
-                new[] { tf.ones(new Dimension(parameters.BatchSize * parameters.SeqLength)) });
+                new[] { tf.ones(new[] { parameters.BatchSize * parameters.SeqLength }) });
 
             Tensor cost = null;
             new name_scope("cost").UseSelf(_ => {
@@ -120,7 +120,7 @@
             var chr = prime.Last();
             for (int i = 0; i < num; i++) {
                 var x = np.zeros(new TensorShape(1, 1));
-                x[0, 0] = new int_(vocabulary[chr]);
+                x[0, 0] = vocabulary[chr];
                 var feed = new PythonDict<dynamic, dynamic> {
                     [this.inputData] = x,
                     [this.initialState] = state,
@@ -155,7 +155,7 @@
             var state = session.run(this.rnn.zero_state(1, tf.float32));
             foreach (var chr in prime.Substring(0, prime.Length - 1)) {
                 var x = np.zeros(new TensorShape(1, 1));
-                x[0, 0] = new int_(vocabulary[chr]);
+                x[0, 0] = vocabulary[chr];
                 var feed = new PythonDict<dynamic, dynamic> {
                     [this.inputData] = x,
                     [this.initialState] = state,
