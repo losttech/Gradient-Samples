@@ -27,7 +27,7 @@
         internal readonly seq2seqState finalState;
         readonly dynamic probs;
         internal readonly dynamic targets;
-        internal readonly Variable lr;
+        internal readonly Variable learningRate;
 
         public CharRNNModel(CharRNNModelParameters parameters, bool training = true) {
             this.parameters = parameters ?? throw new ArgumentNullException(nameof(parameters));
@@ -40,7 +40,7 @@
                 throw new NotSupportedException(parameters.ModelType.ToString());
 
             for(int i = 0; i < parameters.LayerCount; i++) {
-                dynamic cell = this.cellFactory(parameters.RNNSize);
+                RNNCell cell = this.cellFactory(parameters.RNNSize);
                 if (training && (parameters.KeepOutputProbability < 1 || parameters.KeepInputProbability < 1))
                     cell = new DropoutWrapper(cell,
                         input_keep_prob: parameters.KeepInputProbability,
@@ -65,8 +65,8 @@
             if (training && parameters.KeepOutputProbability < 1)
                 input = tf.nn.dropout(input, parameters.KeepOutputProbability);
 
-            PythonList<Tensor> inputs = tf.split(input, parameters.SeqLength, 1);
-            inputs = inputs.Select(i => (Tensor)tf.squeeze(i, 1)).ToPythonList();
+            PythonList<Tensor> inputs = tf.split(input, parameters.SeqLength, axis: 1);
+            inputs = inputs.Select(i => (Tensor)tf.squeeze(i, axis: 1)).ToPythonList();
 
             dynamic Loop(dynamic prev, dynamic _) {
                 prev = tf.matmul(prev, softmax_W) + softmax_b;
@@ -93,13 +93,13 @@
             });
             this.cost = cost;
             this.finalState = lastState;
-            this.lr = new Variable(0.0, trainable: false);
+            this.learningRate = new Variable(0.0, trainable: false);
             var tvars = tf.trainable_variables();
 
             IEnumerable<object> grads = tf.clip_by_global_norm(tf.gradients(this.cost, tvars), parameters.GradientClip).Item1;
             AdamOptimizer optimizer = null;
-            new name_scope("optimizer").UseSelf(_ => optimizer = new AdamOptimizer(this.lr));
-            this.trainOp = optimizer.apply_gradients(grads.Zip(tvars, (g,v) => (dynamic)(g,v)));
+            new name_scope("optimizer").UseSelf(_ => optimizer = new AdamOptimizer(this.learningRate));
+            this.trainOp = optimizer.apply_gradients(grads.Zip(tvars, (grad, @var) => (dynamic)(grad, @var)));
 
             tf.summary.histogram("logits", new[] { this.logits });
             tf.summary.histogram("loss", new[] { this.loss });
@@ -107,17 +107,20 @@
         }
 
         public string Sample(Session session, dynamic chars, IReadOnlyDictionary<char, int> vocabulary, int num = 200, string prime = "The ", int samplingType = 1) {
-            dynamic state = CreateInitialState(session, vocabulary, prime);
+            dynamic state = this.CreateInitialState(session, vocabulary, prime);
 
             int WeightedPick(IEnumerable<float32> weights) {
-                var sums = Enumerable.Aggregate(weights, (sum: 0.0, sums: new List<double>()),
-                    (acc, value) => { acc.sum += (double)value; acc.sums.Add(acc.sum); return (acc.sum, acc.sums); }).sums.ToArray();
+                double[] sums = weights.Aggregate((sum: 0.0, sums: new List<double>()),
+                    (acc, value) => {
+                        acc.sum += (double)value; acc.sums.Add(acc.sum);
+                        return (acc.sum, acc.sums);
+                    }).sums.ToArray();
                 int index = Array.BinarySearch(sums, this.random.NextDouble() * sums.Last());
                 return index < 0 ? ~index : index;
             }
 
-            var ret = prime;
-            var chr = prime.Last();
+            string ret = prime;
+            char chr = prime.Last();
             for (int i = 0; i < num; i++) {
                 var x = np.zeros(new TensorShape(1, 1));
                 x[0, 0] = vocabulary[chr];
@@ -128,17 +131,17 @@
                 var outputs = session.run(new dynamic[] { this.probs, this.finalState }, feed);
                 var probs = outputs[0];
                 state = outputs[1];
-                ndarray p = probs[0];
+                ndarray computedProbabilities = probs[0];
 
                 dynamic sample;
                 switch (samplingType) {
                 case 1:
                 case 2 when chr == ' ':
-                    sample = WeightedPick(p.Cast<ndarray>().SelectMany(s => s.Cast<float32>()));
+                    sample = WeightedPick(computedProbabilities.Cast<ndarray>().SelectMany(s => s.Cast<float32>()));
                     break;
                 case 0:
                 case 2:
-                    sample = p.argmax();
+                    sample = computedProbabilities.argmax();
                     break;
                 default:
                     throw new NotSupportedException();
@@ -153,7 +156,7 @@
 
         private dynamic CreateInitialState(Session session, IReadOnlyDictionary<char,int> vocabulary, string prime) {
             var state = session.run(this.rnn.zero_state(1, tf.float32));
-            foreach (var chr in prime.Substring(0, prime.Length - 1)) {
+            foreach (char chr in prime.Substring(0, prime.Length - 1)) {
                 var x = np.zeros(new TensorShape(1, 1));
                 x[0, 0] = vocabulary[chr];
                 var feed = new PythonDict<dynamic, dynamic> {

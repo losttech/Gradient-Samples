@@ -59,7 +59,7 @@
             this.vocabularySize = this.chars.Count();
             vocabulary = this.chars.Select((chr, i) => (chr, i)).ToDictionary(i => i.chr, i => i.i);
             var tensor = np.load(tensorFile);
-            this.batchCount = (int)(tensor.size / (this.batchSize * this.seqLength));
+            this.batchCount = tensor.size / (this.batchSize * this.seqLength);
             return tensor;
         }
         void CreateBatches() {
