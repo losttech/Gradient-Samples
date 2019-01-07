@@ -10,6 +10,8 @@
 
     static class FashionMnistClassification {
         static void Main() {
+            GradientLog.OutputWriter = Console.Out;
+
             (dynamic train, dynamic test) = tf.keras.datasets.fashion_mnist.load_data();
             // will be able to do (trainImages, trainLabels) = train;
             ndarray trainImages = train.Item1;

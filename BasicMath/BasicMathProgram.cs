@@ -1,10 +1,13 @@
 ﻿namespace BasicMath {
     using System;
+    using Gradient;
     using tensorflow;
     using tensorflow.summary;
 
     static class BasicMathProgram {
         static void Main() {
+            GradientLog.OutputWriter = Console.Out;
+
             var a = new dynamic[] { tf.constant(5.0, name: "a") };
             var b = new dynamic[] { tf.constant(10.0, name: "b") };
 

@@ -2,6 +2,7 @@
     using System;
     using System.Dynamic;
     using System.Linq;
+    using Gradient;
     using Python.Runtime;
     using SharPy.Runtime;
     using tensorflow;
@@ -13,6 +14,8 @@
         static dynamic np;
 
         static void Main() {
+            GradientLog.OutputWriter = Console.Out;
+
             np = PythonEngine.ImportModule("numpy");
             // WIP
             // flags do not work. See https://github.com/pythonnet/pythonnet/issues/792
@@ -47,7 +50,7 @@
         static dynamic Loss(dynamic W, dynamic b, dynamic inputData, dynamic targetData) {
             var logits = tf.subtract(tf.matmul(inputData, W), b);
             var normTerm = tf.divide(tf.reduce_sum(tf.multiply(tf.transpose(W), W)), 2);
-            var classificationLoss = tf.reduce_mean(tf.maximum(new PythonList<dynamic> { 0.0 }, tf.subtract(FLAGS.delta, tf.multiply(logits, targetData))));
+            var classificationLoss = tf.reduce_mean(tf.maximum(0.0, tf.subtract(FLAGS.delta, tf.multiply(logits, targetData))));
             var totalLoss = tf.add(tf.multiply(FLAGS.C_param, classificationLoss), tf.multiply(FLAGS.Reg_param, normTerm));
             return totalLoss;
         }
