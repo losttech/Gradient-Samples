@@ -37,8 +37,7 @@
             model.fit(trainImages, trainLabels, epochs: 5);
 
             var testEvalResult = model.evaluate(testImages, testLabels);
-            float testAcc = testEvalResult[1];
-            // (float testLoss, float testAcc) = (ValueTuple<float, float>)model.evaluate(testImages, testLabels);
+            double testAcc = testEvalResult[1];
 
             Console.WriteLine($"Test accuracy: {testAcc}");
         }

@@ -26,7 +26,7 @@
 
             var model = tf.layers.dense(hiddenLayer, units: 1, name: "output");
 
-            Tensor cost = tf.losses.mean_squared_error(output, model);
+            var cost = tf.losses.mean_squared_error(output, model);
 
             var training = new GradientDescentOptimizer(learning_rate: learningRate).minimize(cost);
 
