@@ -28,7 +28,12 @@
         }
 
         static int Sample(CharRNNSamplingParameters args) {
-            var savedArgs = JsonConvert.DeserializeObject<CharRNNModelParameters>(File.ReadAllText(Path.Combine(args.saveDir, ConfigFileName)));
+            string saveFile = Path.Combine(args.saveDir, ConfigFileName);
+            if (!File.Exists(saveFile)) {
+                Console.Error.WriteLine($"Save file {saveFile} does not exist. Perhaps you've forgottent to train?");
+                return 1;
+            }
+            var savedArgs = JsonConvert.DeserializeObject<CharRNNModelParameters>(File.ReadAllText(saveFile));
             var (chars, vocabulary) = LoadCharsVocabulary(Path.Combine(args.saveDir, CharsVocabularyFileName));
             string prime = string.IsNullOrEmpty(args.prime) ? chars[0].ToString() : args.prime;
             var model = new CharRNNModel(savedArgs, training: false);
