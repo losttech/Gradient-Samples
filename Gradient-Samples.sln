@@ -15,7 +15,13 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CharRNN", "CharRNN\CharRNN.
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Gradient", "..\Gradient\lib\Gradient.csproj", "{ECF50918-4CE2-4472-AE6B-F906F160215B}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GPT-2", "GPT-2\GPT-2.csproj", "{EC538A23-B1AD-45CC-A9FC-4C58C9209FF9}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "GPT-2", "GPT-2\GPT-2.csproj", "{EC538A23-B1AD-45CC-A9FC-4C58C9209FF9}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Repo", "Repo", "{ED07C81C-8B91-4A96-9D02-0504F155A17C}"
+	ProjectSection(SolutionItems) = preProject
+		.gitignore = .gitignore
+		README.md = README.md
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
