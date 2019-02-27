@@ -11,7 +11,7 @@
 
     static class Gpt2Model
     {
-        static HParams DefaultHParams => new HParams(kwargs: new PythonDict<string, object> {
+        public static HParams DefaultHParams => new HParams(kwargs: new PythonDict<string, object> {
             ["n_vocab"] = 0,
             ["n_ctx"] = 1024,
             ["n_embd"] = 768,
@@ -206,7 +206,7 @@
             return ValueTuple.Create(result, present);
         }
 
-        static int?[] PastShape(dynamic hParams = null, int? batchSize = null, int? sequence = null)
+        public static int?[] PastShape(dynamic hParams = null, int? batchSize = null, int? sequence = null)
         {
             return new int?[]
             {
@@ -236,7 +236,7 @@
             return ExpandTile(pastLength + tf.range(nSteps), batchSize);
         }
 
-        static Dictionary<string, Tensor> Model(dynamic hParams, Tensor input, dynamic past = null, string scope = "model", bool reuse = false)
+        public static Dictionary<string, Tensor> Model(dynamic hParams, Tensor input, dynamic past = null, string scope = "model", object reuse = null)
         {
             var result = new Dictionary<string, Tensor>();
             new variable_scope(scope, reuse: reuse).Use(_ =>
