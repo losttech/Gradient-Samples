@@ -1,11 +1,11 @@
 ﻿namespace Gradient.Samples.GPT2
 {
     using System;
-    static class Program
+    static class Gpt2Program
     {
-        static void Main(string[] args)
+        static void Main()
         {
-            Console.WriteLine("Hello World!");
+            Gpt2Interactive.Run();
         }
     }
 }

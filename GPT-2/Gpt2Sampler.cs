@@ -8,7 +8,7 @@
     using tensorflow.contrib.training;
     using tensorflow.python.ops.variable_scope;
 
-    class Gpt2Sampler
+    static class Gpt2Sampler
     {
         static Tensor TopLogits(Tensor logits, int topK)
         {
@@ -75,7 +75,7 @@
                     };
                 }
 
-                bool True(object _) => true;
+                bool True(object _unused) => true;
 
                 result = tf.while_loop(cond: PythonFunctionContainer.Of<object, bool>(True),
                     body: PythonFunctionContainer.Of(new Func<object, object, object, Tensor[]>(Body)),
