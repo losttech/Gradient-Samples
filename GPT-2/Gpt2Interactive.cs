@@ -5,6 +5,7 @@
     using System.IO;
     using System.Linq;
     using Newtonsoft.Json;
+    using Python.Runtime;
     using SharPy.Runtime;
     using tensorflow;
     using tensorflow.train;
@@ -39,9 +40,9 @@
             var hParams = Gpt2Model.DefaultHParams;
             string paramsOverridePath = Path.Combine("models", modelName, "hparams.json");
             var overrides = JsonConvert.DeserializeObject<Dictionary<string, object>>(File.ReadAllText(paramsOverridePath));
-            var pyDict = new PythonDict<object, object>();
+            var pyDict = new PyDict();
             foreach (var entry in overrides)
-                pyDict.Add(entry.Key, entry.Value);
+                pyDict.SetItem(entry.Key, entry.Value.ToPython());
             hParams.override_from_dict(pyDict);
 
             int nCtx = ((dynamic)hParams).n_ctx;

@@ -31,14 +31,14 @@
                 PythonFunctionContainer.Of(TopK));
         }
 
-        public static Tensor SampleSequence(HParams hParams, int length,
+        public static Tensor SampleSequence(dynamic hParams, int length,
             string startToken = null, int? batchSize = null, dynamic context = null,
             float temperature = 1, int topK = 0)
         {
             if (((startToken == null) ^ (context == null)) == false)
                 throw new ArgumentException($"Exactly one of {nameof(startToken)} or {nameof(context)} has to be specified");
 
-            SortedDictionary<string, dynamic> Step(HParams @params, Tensor tokens, dynamic past = null)
+            SortedDictionary<string, dynamic> Step(dynamic @params, Tensor tokens, dynamic past = null)
             {
                 var lmOutput = Gpt2Model.Model(hParams: @params, input: tokens, past: past, reuse: _ReuseMode.AUTO_REUSE);
 

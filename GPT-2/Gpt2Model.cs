@@ -5,19 +5,20 @@
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.Linq;
+    using Python.Runtime;
     using SharPy.Runtime;
     using tensorflow;
     using tensorflow.contrib.training;
 
     static class Gpt2Model
     {
-        public static HParams DefaultHParams => new HParams(kwargs: new PythonDict<string, object> {
-            ["n_vocab"] = 0,
-            ["n_ctx"] = 1024,
-            ["n_embd"] = 768,
-            ["n_head"] = 12,
-            ["n_layer"] = 12,
-        });
+        static readonly dynamic contribTraining = Py.Import("tensorflow.contrib.training");
+        public static dynamic DefaultHParams => contribTraining.HParams(n_vocab: 0,
+            n_ctx: 1024,
+            n_embd: 768,
+            n_head: 12,
+            n_layer: 12
+        );
 
         /// <summary>
         /// Deal with dynamic shape in tensorflow cleanly.
