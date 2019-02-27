@@ -16,10 +16,10 @@
         private readonly Dictionary<string, string> decoder;
         readonly Dictionary<byte, char> byteEncoder;
         readonly Dictionary<char, byte> byteDecoder;
-        readonly Dictionary<(char,char), float> bpeRanks;
+        readonly Dictionary<(string,string), float> bpeRanks;
 
-        static readonly dynamic re = Py.Import("re");
-        static readonly dynamic pattern = re.compile(@"'s|'t|'re|'ve|'m|'ll|'d| ?\p{L}+| ?\p{N}+| ?[^\s\p{L}\p{N}]+|\s+(?!\S)|\s+");
+        static readonly dynamic regex = Py.Import("regex");
+        static readonly dynamic pattern = regex.compile(@"'s|'t|'re|'ve|'m|'ll|'d| ?\p{L}+| ?\p{N}+| ?[^\s\p{L}\p{N}]+|\s+(?!\S)|\s+");
         static readonly Dictionary<byte, char> BytesToUnicode = ComputeBytesToUnicode();
 
         /// <summary>
@@ -57,21 +57,21 @@
         /// Return set of symbol pairs in a word.
         /// </summary>
         /// <returns>Word is represented as tuple of symbols (symbols being variable-length strings).</returns>
-        static ISet<(char, char)> GetPairs(string word)
+        static ISet<(string, string)> GetPairs(string[] word)
         {
-            var result = new SortedSet<(char, char)>();
-            char prev = word[0];
-            foreach(char @char in word.Skip(1))
+            var result = new SortedSet<(string, string)>();
+            string prev = word[0];
+            foreach(string symbol in word.Skip(1))
             {
-                result.Add((prev, @char));
-                prev = @char;
+                result.Add((prev, symbol));
+                prev = symbol;
             }
             return result;
         }
 
         public Gpt2Encoder(
             IDictionary<string, string> encoder,
-            IEnumerable<(char, char)> bpeMerges,
+            IEnumerable<(string, string)> bpeMerges,
             string errors = "replace")
         {
             this.encoder = encoder;
@@ -83,11 +83,11 @@
         }
 
         readonly Dictionary<string, string> cache = new Dictionary<string, string>();
-        public string BPE(string token)
+        string BPE(string token)
         {
             if (this.cache.TryGetValue(token, out var result))
                 return result;
-            string word = token;
+            string[] word = token.Select(c => c.ToString()).ToArray();
             var pairs = GetPairs(word);
             if (pairs.Count == 0)
                 return token;
@@ -99,47 +99,47 @@
                     break;
 
                 var (first, second) = bigram;
-                var newWord = new StringBuilder();
+                var newWord = new List<string>();
                 int i = 0;
                 while(i < word.Length)
                 {
-                    int j = word.IndexOf(first, i);
+                    int j = Array.IndexOf(word, first, startIndex: i);
                     if (j < 0)
                     {
-                        newWord.Append(word, i, word.Length - i);
+                        newWord.AddRange(word.Skip(i));
                         break;
                     }
 
-                    newWord.Append(word, i, j - i + 1);
+                    newWord.AddRange(word.Skip(i).Take(j - i + 1));
                     i = j;
 
                     if (word[i] == first && i < word.Length - 1 && word[i + 1] == second)
                     {
-                        newWord.Append(first).Append(second);
+                        newWord.Add(first + second);
                         i += 2;
                     } else
                     {
-                        newWord.Append(word[i]);
+                        newWord.Add(word[i]);
                         i++;
                     }
                 }
 
-                word = newWord.ToString();
+                word = newWord.ToArray();
                 if (word.Length == 1)
                     break;
 
                 pairs = GetPairs(word);
             }
 
-            word = string.Join(" ", (IEnumerable<char>)word);
-            this.cache[token] = word;
-            return word;
+            result = string.Join(" ", word);
+            this.cache[token] = result;
+            return result;
         }
 
         public List<string> Encode(string text)
         {
             var bpeTokens = new List<string>();
-            foreach(string token in re.findall(pattern, text))
+            foreach(string token in regex.findall(pattern, text))
             {
                 string encoded = new string(Encoding.UTF8.GetBytes(token)
                     .Select(@byte => this.byteEncoder[@byte]).ToArray());
@@ -163,7 +163,7 @@
                 File.ReadAllText(Path.Combine("models", modelName, "encoder.json"), Encoding.UTF8));
             string bpeData = File.ReadAllText(Path.Combine("models", modelName, "vocab.bpe"), Encoding.UTF8);
             var bpeMerges = Enumerable.SkipLast(bpeData.Split('\n'), 1).Skip(1)
-                .Select(merge => (merge[0], merge[1]));
+                .Select(merge => (merge.Split(' ')[0], merge.Split(' ')[1]));
             return new Gpt2Encoder(encoder, bpeMerges);
         }
     }
