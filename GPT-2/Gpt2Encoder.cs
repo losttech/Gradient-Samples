@@ -7,6 +7,7 @@
     using System.Text;
     using MoreLinq;
     using Newtonsoft.Json;
+    using numpy;
     using Python.Runtime;
     using static System.Linq.Enumerable;
     class Gpt2Encoder
@@ -42,13 +43,13 @@
                 .ToList();
             var cs = bs.ToList();
             int n = 0;
-            foreach(int b in Range(0, 2 ^ 8))
+            foreach(int b in Range(0, 256))
             {
                 if (bs.Contains(b))
                     continue;
 
                 bs.Add(b);
-                cs.Add(2 ^ 8 + n);
+                cs.Add(256 + n);
                 n++;
             }
             return bs.EquiZip(cs, (b, c) => ValueTuple.Create(checked((byte)b), checked((char)c))).ToDictionary();
@@ -94,7 +95,7 @@
 
             while (true)
             {
-                var bigram = pairs.MinBy(pair => this.bpeRanks.GetValueOrDefault(pair, float.PositiveInfinity)).Single();
+                var bigram = pairs.MinBy(pair => this.bpeRanks.GetValueOrDefault(pair, float.PositiveInfinity)).First();
                 if (!this.bpeRanks.ContainsKey(bigram))
                     break;
 
@@ -110,7 +111,7 @@
                         break;
                     }
 
-                    newWord.AddRange(word.Skip(i).Take(j - i + 1));
+                    newWord.AddRange(word.Skip(i).Take(j - i));
                     i = j;
 
                     if (word[i] == first && i < word.Length - 1 && word[i + 1] == second)
@@ -143,15 +144,17 @@
             {
                 string encoded = new string(Encoding.UTF8.GetBytes(token)
                     .Select(@byte => this.byteEncoder[@byte]).ToArray());
-                foreach (var bpeToken in this.BPE(token).Split(' '))
+                string bpe = this.BPE(encoded);
+                foreach (var bpeToken in bpe.Split(' '))
                     bpeTokens.Add(this.encoder[bpeToken]);
             }
             return bpeTokens;
         }
 
-        public string Decode(List<string> tokens)
+        public string Decode(ndarray tokens)
         {
-            byte[] bytes = tokens.SelectMany(token => this.decoder[token].Select(@char => this.byteDecoder[@char]))
+            string[] tokenStrings = tokens.Cast<object>().Select(t => t.ToString()).ToArray();
+            byte[] bytes = tokenStrings.SelectMany(token => this.decoder[token].Select(@char => this.byteDecoder[@char]))
                 .ToArray();
             // TODO: error mode!
             return Encoding.UTF8.GetString(bytes);
