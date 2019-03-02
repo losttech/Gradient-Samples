@@ -11,8 +11,6 @@
     using tensorflow;
     using tensorflow.train;
 
-    using Range = RangeWorkaround;
-
     static class Gpt2Interactive
     {
         /// <summary>
@@ -88,7 +86,7 @@
                         var @out = sess.run(output, feed_dict: new PythonDict<object, object>
                         {
                             [context] = Enumerable.Repeat(contextTokens, batchSize),
-                        }).__getitem__(ValueTuple.Create(Range.All(), Range.FromStart(contextTokens.Count)));
+                        }).__getitem__(ValueTuple.Create(Range.All, Range.StartAt(contextTokens.Count)));
                         foreach(int i in Enumerable.Range(0, batchSize))
                         {
                             generated++;

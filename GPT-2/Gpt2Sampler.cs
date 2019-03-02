@@ -9,8 +9,6 @@
     using tensorflow.contrib.training;
     using tensorflow.python.ops.variable_scope;
 
-    using Range = RangeWorkaround;
-
     static class Gpt2Sampler
     {
         static readonly dynamic AUTO_REUSE = Py.Import("tensorflow").GetAttr("AUTO_REUSE");
@@ -24,7 +22,7 @@
             {
                 var valuesIndices = tf.nn.top_k_dyn(logits, k: topK);
                 var values = valuesIndices.Item1;
-                var minValues = values.__getitem__(ValueTuple.Create(Range.All(), -1, tf.newaxis));
+                var minValues = values.__getitem__(ValueTuple.Create(Range.All, -1, tf.newaxis));
                 return tf.where_dyn(logits < minValues,
                     tf.ones_like(logits, dtype: logits.dtype) * -1e10,
                     logits);
@@ -46,7 +44,7 @@
             {
                 var lmOutput = GPT2.Gpt2Model.Model(hParams: @params, input: tokens, past: past, reuse: AUTO_REUSE);
 
-                var logits = lmOutput["logits"].__getitem__(ValueTuple.Create(Range.All(), Range.All(), Range.ToEnd((int)@params.get("n_vocab"))));
+                var logits = lmOutput["logits"].__getitem__(ValueTuple.Create(Range.All, Range.All, Range.EndAt((int)@params.get("n_vocab"))));
                 Tensor presents = lmOutput["present"];
                 int?[] pastShape = GPT2.Gpt2Model.PastShape(hParams: @params, batchSize: batchSize);
                 presents.set_shape_(pastShape.Cast<object>());
@@ -64,12 +62,12 @@
                 // Don't feed the last context token -- leave that to the loop below
                 // TODO: Would be slightly faster if we called step on the entire context,
                 // rather than leaving the last token transformer calculation to the while loop.
-                var contextOutput = Step(hParams, context.__getitem__(ValueTuple.Create(Range.All(), Range.ToEnd(new Index(1, fromEnd: true)))));
+                var contextOutput = Step(hParams, context.__getitem__(ValueTuple.Create(Range.All, Range.EndAt(new Index(1, fromEnd: true)))));
 
                 Tensor[] Body(object past, dynamic prev, object output)
                 {
-                    var nextOutputs = Step(hParams, prev.__getitem__(ValueTuple.Create(Range.All(), tf.newaxis)), past: past);
-                    Tensor logits = nextOutputs["logits"].__getitem__(ValueTuple.Create(Range.All(), -1, Range.All())) / tensorflow.tf.to_float(temperature);
+                    var nextOutputs = Step(hParams, prev.__getitem__(ValueTuple.Create(Range.All, tf.newaxis)), past: past);
+                    Tensor logits = nextOutputs["logits"].__getitem__(ValueTuple.Create(Range.All, -1, Range.All)) / tensorflow.tf.to_float(temperature);
                     logits = TopLogits(logits, topK: topK);
                     var samples = tf.multinomial_dyn(logits, num_samples: 1, output_dtype: tf.int32);
                     return new Tensor[]
@@ -84,7 +82,7 @@
 
                 dynamic[] loopVars = new[]{
                     contextOutput["presents"],
-                    context.__getitem__(ValueTuple.Create(Range.All(), -1)),
+                    context.__getitem__(ValueTuple.Create(Range.All, -1)),
                     context,
                 };
                 TensorShape[] shapeInvariants = new[]{

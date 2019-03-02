@@ -10,8 +10,6 @@
     using tensorflow;
     using tensorflow.contrib.training;
 
-    using Range = RangeWorkaround;
-
     static class Gpt2Model
     {
         static readonly PyObject None = PythonEngine.Eval("None");
@@ -121,7 +119,7 @@
         /// </summary>
         static Tensor AttentionMask(dynamic nd, dynamic ns, DType dtype = null)
         {
-            var i = tf.range_dyn(nd).__getitem__(ValueTuple.Create(Range.All(), (System.Range?)null));
+            var i = tf.range_dyn(nd).__getitem__(ValueTuple.Create(Range.All, (System.Range?)null));
             var j = tf.range_dyn(ns);
             var m = i.__ge__(j - ns + nd);
             return tf.cast(m, dtype);
