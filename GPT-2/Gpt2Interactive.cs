@@ -5,6 +5,8 @@
     using System.IO;
     using System.Linq;
     using Newtonsoft.Json;
+    using numpy;
+    using Python.Runtime;
     using SharPy.Runtime;
     using tensorflow;
     using tensorflow.train;
@@ -29,7 +31,7 @@
         /// while 40 means 40 words are considered at each step. 0 (default) is a
         /// special setting meaning no restrictions. 40 generally is a good value.
         /// </param>
-        public static void Run(string modelName = "117M", int? seed = null, int sampleCount = 0,
+        public static void Run(string modelName = "117M", int? seed = null, int sampleCount = 1,
             int batchSize = 1, int? length = null, float temperature = 1, int topK = 0)
         {
             if (sampleCount % batchSize != 0)
@@ -84,11 +86,12 @@
                         var @out = sess.run(output, feed_dict: new PythonDict<object, object>
                         {
                             [context] = Enumerable.Repeat(contextTokens, batchSize),
-                        })[Range.All(), Range.FromStart(contextTokens.Count)];
+                        })[Range.All, Range.StartAt(contextTokens.Count)];
                         foreach(int i in Enumerable.Range(0, batchSize))
                         {
                             generated++;
-                            text = encoder.Decode(@out[i]);
+                            ndarray part = @out[i];
+                            text = encoder.Decode(part);
                             Console.WriteLine($"{Delimiter} SAMPLE {generated} {Delimiter}");
                             Console.WriteLine(text);
                         }

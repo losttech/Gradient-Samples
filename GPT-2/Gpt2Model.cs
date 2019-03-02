@@ -22,11 +22,11 @@
         /// <summary>
         /// Deal with dynamic shape in tensorflow cleanly.
         /// </summary>
-        static int[] ShapeList(ITensor tensor)
+        static dynamic[] ShapeList(ITensor tensor)
         {
-            var @static = tensor.shape.as_list();
+            IEnumerable<int?> @static = tensor.shape.as_list();
             dynamic dynamic = tf.shape(tensor);
-            return @static.Select((size, index) => size ?? (int)dynamic[index]).ToArray();
+            return @static.Select((size, index) => size == null ? (object)dynamic[index] : size).ToArray();
         }
 
         static Tensor Softmax(Tensor input, int axis = -1)
@@ -37,7 +37,7 @@
         }
 
         static Tensor GeLU(Tensor input) =>
-            (dynamic)input * 0.5 * (1 + tf.tanh(Math.Sqrt(2 / Math.PI) * (input + 0.044715 * tf.pow(input, 3))));
+            ((dynamic)input * 0.5) * (tf.tanh_dyn((input + tf.pow(input, 3) * 0.044715) * Math.Sqrt(2 / Math.PI)) + 1);
 
         /// <summary>
         /// Normalize to mean = 0, std = 1, then do a diagonal affine transform.
@@ -47,12 +47,12 @@
             Tensor result = null;
             new variable_scope(scope).Use(_ =>
             {
-                var nState = input.shape[-1];
-                var g = tf.get_variable("g", nState, initializer: new constant_initializer(1));
-                var b = tf.get_variable("b", nState, initializer: new constant_initializer(0));
+                Dimension nState = input.shape[-1];
+                var g = tf.get_variable("g", new TensorShape(nState), initializer: new constant_initializer(1));
+                var b = tf.get_variable("b", new TensorShape(nState), initializer: new constant_initializer(0));
                 var mean = tf.reduce_mean(input, axis: axis, keepdims: true);
-                var s = tf.reduce_mean(tf.square(input - mean), axis: axis, keepdims: true);
-                result = (input - mean) * tf.rsqrt(s + epsilon);
+                var s = tf.reduce_mean(tf.square_dyn(input - mean), axis: axis, keepdims: true);
+                result = (input - mean) * tf.rsqrt_dyn(s + epsilon);
                 result = result * g + b;
             });
             return result;
@@ -86,14 +86,15 @@
             Tensor result = null;
             new variable_scope(scope).Use(_ =>
             {
-                int[] shape = ShapeList(input);
+                dynamic[] shape = ShapeList(input);
                 var start = shape.Take(shape.Length - 1);
-                int nx = shape.Last();
-                var w = tf.get_variable("w", new TensorShape(1, nx, nf), initializer: new random_normal_initializer(stddev: wInitialStDev));
+                object nx = shape.Last();
+                var wShape = new TensorShape(ValueTuple.Create(1, nx, nf));
+                var w = tf.get_variable("w", wShape, initializer: new random_normal_initializer(stddev: wInitialStDev));
                 var b = tf.get_variable("b", new TensorShape(nf), initializer: new constant_initializer(0));
-                result = tf.reshape(
+                result = tf.reshape_dyn(
                     tf.matmul(
-                        tf.reshape(input, new[] { -1, nx }),
+                        tf.reshape_dyn(input, new[] { -1, nx }),
                         tf.reshape(w, new[] { -1, nf })) + b,
                     start.Append(nf));
             });
@@ -106,13 +107,14 @@
         /// </summary>
         static Tensor AttentionMask(dynamic nd, dynamic ns, DType dtype = null)
         {
-            var i = tf.range(nd)[Range.All(), null];
-            var j = tf.range(ns);
-            var m = i >= j - ns + nd;
+            // have to use range_dyn, otherwise Tensors i and j end up being tf.float32
+            var i = tf.range_dyn(nd)[Range.All, (Range?)null];
+            var j = tf.range_dyn(ns);
+            var m = i.__ge__(j - ns + nd);
             return tf.cast(m, dtype);
         }
 
-        static ValueTuple<Tensor, object> Attention(Tensor input, object scope, int nState, Tensor past = null, dynamic hParams = null)
+        static ValueTuple<Tensor, Tensor> Attention(Tensor input, object scope, int nState, Tensor past = null, dynamic hParams = null)
         {
             Trace.Assert(input.shape.ndims == 3);
             Trace.Assert(nState % (int)hParams.n_head == 0);
@@ -121,7 +123,7 @@
 
             Tensor SplitHeads(Tensor x) =>
                 // From [batch, sequence, features] to [batch, heads, sequence, features]
-                tf.transpose(SplitStates(x, hParams.h_head), new[] { 0, 2, 1, 3 });
+                tf.transpose(SplitStates(x, hParams.n_head), new[] { 0, 2, 1, 3 });
 
             Tensor MergeHeads(Tensor x) =>
                 // Reverse of split_heads
@@ -131,11 +133,11 @@
             {
                 // w has shape [batch, heads, dst_sequence, src_sequence], where information flows from src to dst.
                 var shape = ShapeList(w);
-                int nd = shape[shape.Length - 2];
-                int ns = shape[shape.Length - 1];
+                object nd = shape[shape.Length - 2];
+                object ns = shape[shape.Length - 1];
                 var b = AttentionMask(nd, ns, dtype: w.dtype);
-                b = tf.reshape(b, new[] { 1, 1, nd, ns });
-                w = (dynamic)w * b - tf.cast(1e10, w.dtype) * (1 - (dynamic)b);
+                b = tf.reshape_dyn(b, new object[] { 1, 1, nd, ns });
+                w = (dynamic)w * b - tf.cast(1e10, w.dtype) * (tf.constant(1.0) - (dynamic)b);
                 return w;
             }
 
@@ -143,7 +145,7 @@
             {
                 // q, k, v have shape [batch, heads, sequence, features]
                 Tensor w = tf.matmul(q, k, transpose_b: true);
-                w *= tf.rsqrt(tf.cast(v.shape[-1].value, w.dtype));
+                w *= tf.rsqrt_dyn(tf.cast(v.shape[-1].value, w.dtype));
 
                 w = MaskAttentionWeights(w);
                 w = Softmax(w);
@@ -151,7 +153,7 @@
             }
 
             Tensor attention = null;
-            dynamic present = null;
+            Tensor present = null;
             new variable_scope(scope).Use(_ =>
             {
                 var c = Conv1D(input, "c_attn", nState * 3);
@@ -181,20 +183,20 @@
             Tensor result = null;
             new variable_scope(scope).Use(_ =>
             {
-                var nx = input.shape[-1].value;
+                int nx = input.shape[-1].value;
                 var h = GeLU(Conv1D(input, "c_fc", nState));
                 result = Conv1D(h, "c_proj", nx);
             });
             return result;
         }
 
-        static ValueTuple<Tensor, dynamic> Block(Tensor input, string scope, Tensor past = null, dynamic hParams = null)
+        static ValueTuple<Tensor, Tensor> Block(Tensor input, string scope, Tensor past = null, dynamic hParams = null)
         {
             Tensor result = null;
-            dynamic present = null;
+            Tensor present = null;
             new variable_scope(scope).Use(_ =>
             {
-                var nx = input.shape[-1].value;
+                int nx = input.shape[-1].value;
                 var attentionPresent = Attention(Norm(input, "ln_1"), "attn", nx, past: past, hParams: hParams);
                 Tensor attention = attentionPresent.Item1;
                 present = attentionPresent.Item2;
@@ -215,25 +217,31 @@
                 2,
                 hParams.n_head,
                 sequence,
-                (int)hParams.n_embed / (int)hParams.n_head,
+                (int)hParams.n_embd / (int)hParams.n_head,
             };
         }
 
         /// <summary>
         /// "Add a new axis of given size.
         /// </summary>
-        static Tensor ExpandTile(dynamic value, int size)
+        static Tensor ExpandTile(dynamic value, Tensor size)
         {
             value = tf.convert_to_tensor(value, name: "value");
             int ndims = value.shape.ndims;
-            return tf.tile(tf.expand_dims(value, axis: 0), new[] { size }.Concat(Enumerable.Repeat(1, ndims)));
+            return tf.tile_dyn(
+                tf.expand_dims(value, axis: 0),
+                multiples: new object[] { size }.Concat(Enumerable.Repeat((object)1, ndims)));
         }
 
-        static Tensor PositionsFor(dynamic tokens, dynamic pastLength)
+        static Tensor PositionsFor(dynamic tokens, Tensor pastLength)
         {
-            int batchSize = tf.shape(tokens)[0];
-            int nSteps = tf.shape(tokens)[1];
-            return ExpandTile(pastLength + tf.range(nSteps), batchSize);
+            Tensor batchSize = tf.shape(tokens)[0];
+            Tensor nSteps = tf.shape(tokens)[1];
+            dynamic stepsRange = tf.range_dyn(nSteps, dtype: tf.int32);
+            Tensor result = ExpandTile(stepsRange + pastLength, batchSize);
+            if (!result.dtype.is_integer)
+                throw new InvalidOperationException();
+            return result;
         }
 
         public static Dictionary<string, Tensor> Model(dynamic hParams, Tensor input, dynamic past = null, string scope = "model", object reuse = null)
@@ -241,20 +249,20 @@
             var result = new Dictionary<string, Tensor>();
             new variable_scope(scope, reuse: reuse).Use(_ =>
             {
-                int[] batchSeq = ShapeList(input);
-                int batch = batchSeq[0];
-                int sequence = batchSeq[1];
+                dynamic[] batchSeq = ShapeList(input);
+                dynamic batch = batchSeq[0];
+                dynamic sequence = batchSeq[1];
 
-                var wpe = tf.get_variable("wpe", new TensorShape(hParams.n_ctx, hParams.n_embd), initializer: new random_normal_initializer(stddev: 0.01));
-                var wte = tf.get_variable("wte", new TensorShape(hParams.n_vocab, hParams.n_embd), initializer: new random_normal_initializer(stddev: 0.02));
+                var wpe = tf.get_variable("wpe", new TensorShape((int)hParams.n_ctx, (int)hParams.n_embd), initializer: new random_normal_initializer(stddev: 0.01));
+                var wte = tf.get_variable("wte", new TensorShape((int)hParams.n_vocab, (int)hParams.n_embd), initializer: new random_normal_initializer(stddev: 0.02));
 
-                int pastLen = past == null ? 0 : tf.shape(past)[-2];
+                Tensor pastLen = past == null ? tf.constant(0) : tf.shape(past)[-2];
                 var h = tf.gather_dyn(wte, input) + tf.gather_dyn(wpe, PositionsFor(input, pastLen));
 
                 var presents = new List<object>();
                 var pasts = past != null
                     ? tf.unstack(past, axis: 1)
-                    : Enumerable.Repeat<object>(null, hParams.n_layer);
+                    : Enumerable.Repeat<object>(null, (int)hParams.n_layer);
 
                 int layer = 0;
                 foreach(dynamic existingPast in pasts)
@@ -269,9 +277,9 @@
                 h = Norm(h, "ln_f");
 
                 // Language model loss.  Do tokens <n predict token n?
-                var hFlat = tf.reshape(h, new int[] { batch * sequence, hParams.n_embd });
+                var hFlat = tf.reshape_dyn(h, new [] { sequence * batch , (int)hParams.n_embd });
                 Tensor logits = tf.matmul(hFlat, wte, transpose_b: true);
-                logits = tf.reshape(logits, new int[] { batch, sequence, hParams.n_vocab });
+                logits = tf.reshape_dyn(logits, new [] { batch, sequence, (int)hParams.n_vocab });
                 result["logits"] = logits;
             });
             return result;

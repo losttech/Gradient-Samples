@@ -5,6 +5,10 @@
     {
         static void Main()
         {
+            GradientSetup.OptInToUsageDataCollection();
+            // force Gradient initialization
+            tensorflow.tf.no_op();
+
             Gpt2Interactive.Run();
         }
     }
