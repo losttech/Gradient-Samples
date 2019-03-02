@@ -5,14 +5,12 @@
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.Linq;
-    using Python.Runtime;
     using SharPy.Runtime;
     using tensorflow;
     using tensorflow.contrib.training;
 
     static class Gpt2Model
     {
-        static readonly PyObject None = PythonEngine.Eval("None");
         public static HParams DefaultHParams => new HParams(kwargs: new PythonDict<string, object> {
             ["n_vocab"] = 0,
             ["n_ctx"] = 1024,
@@ -26,19 +24,9 @@
         /// </summary>
         static dynamic[] ShapeList(ITensor tensor)
         {
-            var @static = new PyList(tensor.shape.PythonObject.as_list());
+            IEnumerable<int?> @static = tensor.shape.as_list();
             dynamic dynamic = tf.shape(tensor);
-            return @static.Cast<PyObject>()
-                .Select((size, index) =>
-                {
-                    var dim = size.Handle == None.Handle
-                                        ? dynamic[index]
-                                        : (int)(dynamic)size;
-                    if (dim is PyObject @null && @null.Handle == IntPtr.Zero)
-                        throw new InvalidOperationException();
-                    return dim;
-                })
-                .ToArray();
+            return @static.Select((size, index) => size == null ? (object)dynamic[index] : size).ToArray();
         }
 
         static Tensor Softmax(Tensor input, int axis = -1)
