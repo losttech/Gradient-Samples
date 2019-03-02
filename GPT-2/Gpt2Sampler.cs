@@ -4,14 +4,12 @@
     using System.Collections.Generic;
     using System.Linq;
     using numpy;
-    using Python.Runtime;
     using tensorflow;
     using tensorflow.contrib.training;
     using tensorflow.python.ops.variable_scope;
 
     static class Gpt2Sampler
     {
-        static readonly dynamic AUTO_REUSE = Py.Import("tensorflow").GetAttr("AUTO_REUSE");
         static Tensor TopLogits(Tensor logits, int topK)
         {
             if (topK == 0)
@@ -42,7 +40,7 @@
 
             SortedDictionary<string, dynamic> Step(HParams @params, Tensor tokens, dynamic past = null)
             {
-                var lmOutput = GPT2.Gpt2Model.Model(hParams: @params, input: tokens, past: past, reuse: AUTO_REUSE);
+                var lmOutput = Gpt2Model.Model(hParams: @params, input: tokens, past: past, reuse: _ReuseMode.AUTO_REUSE);
 
                 var logits = lmOutput["logits"][Range.All, Range.All, Range.EndAt((int)@params.get("n_vocab"))];
                 Tensor presents = lmOutput["present"];

@@ -31,9 +31,9 @@
 
         static Tensor Softmax(Tensor input, int axis = -1)
         {
-            var negative = input - tf.reduce_max_dyn(input, axis: axis, keepdims: true);
+            var negative = input - tf.reduce_max(input, axis: axis, keepdims: true);
             var exp = tf.exp(negative);
-            return exp / tf.reduce_sum_dyn(exp, axis: axis, keepdims: true);
+            return exp / tf.reduce_sum(exp, axis: axis, keepdims: true);
         }
 
         static Tensor GeLU(Tensor input) =>
@@ -107,6 +107,7 @@
         /// </summary>
         static Tensor AttentionMask(dynamic nd, dynamic ns, DType dtype = null)
         {
+            // have to use range_dyn, otherwise Tensors i and j end up being tf.float32
             var i = tf.range_dyn(nd)[Range.All, (Range?)null];
             var j = tf.range_dyn(ns);
             var m = i.__ge__(j - ns + nd);
@@ -115,14 +116,14 @@
 
         static ValueTuple<Tensor, Tensor> Attention(Tensor input, object scope, int nState, Tensor past = null, dynamic hParams = null)
         {
-            Trace.Assert((int)input.shape.ndims_dyn == 3);
+            Trace.Assert(input.shape.ndims == 3);
             Trace.Assert(nState % (int)hParams.n_head == 0);
             if (past != null)
-                Trace.Assert((int)past.shape.ndims_dyn == 5);
+                Trace.Assert(past.shape.ndims == 5);
 
             Tensor SplitHeads(Tensor x) =>
                 // From [batch, sequence, features] to [batch, heads, sequence, features]
-                tf.transpose(SplitStates(x, (int)hParams.n_head), new[] { 0, 2, 1, 3 });
+                tf.transpose(SplitStates(x, hParams.n_head), new[] { 0, 2, 1, 3 });
 
             Tensor MergeHeads(Tensor x) =>
                 // Reverse of split_heads
@@ -144,7 +145,7 @@
             {
                 // q, k, v have shape [batch, heads, sequence, features]
                 Tensor w = tf.matmul(q, k, transpose_b: true);
-                w *= tf.rsqrt_dyn(tf.cast(v.shape[-1].value_dyn, w.dtype));
+                w *= tf.rsqrt_dyn(tf.cast(v.shape[-1].value, w.dtype));
 
                 w = MaskAttentionWeights(w);
                 w = Softmax(w);
@@ -182,7 +183,7 @@
             Tensor result = null;
             new variable_scope(scope).Use(_ =>
             {
-                int nx = input.shape[-1].value_dyn;
+                int nx = input.shape[-1].value;
                 var h = GeLU(Conv1D(input, "c_fc", nState));
                 result = Conv1D(h, "c_proj", nx);
             });
@@ -195,7 +196,7 @@
             Tensor present = null;
             new variable_scope(scope).Use(_ =>
             {
-                int nx = input.shape[-1].value_dyn;
+                int nx = input.shape[-1].value;
                 var attentionPresent = Attention(Norm(input, "ln_1"), "attn", nx, past: past, hParams: hParams);
                 Tensor attention = attentionPresent.Item1;
                 present = attentionPresent.Item2;
@@ -226,9 +227,9 @@
         static Tensor ExpandTile(dynamic value, Tensor size)
         {
             value = tf.convert_to_tensor(value, name: "value");
-            int ndims = value.shape.ndims_dyn;
-            return tf.tile_dyn
-                (tf.expand_dims(value, axis: 0),
+            int ndims = value.shape.ndims;
+            return tf.tile_dyn(
+                tf.expand_dims(value, axis: 0),
                 multiples: new object[] { size }.Concat(Enumerable.Repeat((object)1, ndims)));
         }
 
