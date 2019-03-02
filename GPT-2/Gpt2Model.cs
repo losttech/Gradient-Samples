@@ -32,7 +32,7 @@
                 .Select((size, index) =>
                 {
                     var dim = size.Handle == None.Handle
-                                        ? dynamic.__getitem__(index)
+                                        ? dynamic[index]
                                         : (int)(dynamic)size;
                     if (dim is PyObject @null && @null.Handle == IntPtr.Zero)
                         throw new InvalidOperationException();
@@ -119,7 +119,7 @@
         /// </summary>
         static Tensor AttentionMask(dynamic nd, dynamic ns, DType dtype = null)
         {
-            var i = tf.range_dyn(nd).__getitem__(ValueTuple.Create(Range.All, (System.Range?)null));
+            var i = tf.range_dyn(nd)[Range.All, (Range?)null];
             var j = tf.range_dyn(ns);
             var m = i.__ge__(j - ns + nd);
             return tf.cast(m, dtype);
@@ -246,8 +246,8 @@
 
         static Tensor PositionsFor(dynamic tokens, Tensor pastLength)
         {
-            Tensor batchSize = tf.shape(tokens).__getitem__(0);
-            Tensor nSteps = tf.shape(tokens).__getitem__(1);
+            Tensor batchSize = tf.shape(tokens)[0];
+            Tensor nSteps = tf.shape(tokens)[1];
             dynamic stepsRange = tf.range_dyn(nSteps, dtype: tf.int32);
             Tensor result = ExpandTile(stepsRange + pastLength, batchSize);
             if (!result.dtype.is_integer)
@@ -267,7 +267,7 @@
                 var wpe = tf.get_variable("wpe", new TensorShape((int)hParams.n_ctx, (int)hParams.n_embd), initializer: new random_normal_initializer(stddev: 0.01));
                 var wte = tf.get_variable("wte", new TensorShape((int)hParams.n_vocab, (int)hParams.n_embd), initializer: new random_normal_initializer(stddev: 0.02));
 
-                Tensor pastLen = past == null ? tf.constant(0) : tf.shape(past).__getitem__(-2);
+                Tensor pastLen = past == null ? tf.constant(0) : tf.shape(past)[-2];
                 var h = tf.gather_dyn(wte, input) + tf.gather_dyn(wpe, PositionsFor(input, pastLen));
 
                 var presents = new List<object>();
