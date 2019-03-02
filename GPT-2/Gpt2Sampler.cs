@@ -35,18 +35,18 @@
                 PythonFunctionContainer.Of(TopK));
         }
 
-        public static Tensor SampleSequence(dynamic hParams, int length,
+        public static Tensor SampleSequence(HParams hParams, int length,
             string startToken = null, int? batchSize = null, dynamic context = null,
             float temperature = 1, int topK = 0)
         {
             if (((startToken == null) ^ (context == null)) == false)
                 throw new ArgumentException($"Exactly one of {nameof(startToken)} or {nameof(context)} has to be specified");
 
-            SortedDictionary<string, dynamic> Step(dynamic @params, Tensor tokens, dynamic past = null)
+            SortedDictionary<string, dynamic> Step(HParams @params, Tensor tokens, dynamic past = null)
             {
                 var lmOutput = GPT2.Gpt2Model.Model(hParams: @params, input: tokens, past: past, reuse: AUTO_REUSE);
 
-                var logits = lmOutput["logits"].__getitem__(ValueTuple.Create(Range.All(), Range.All(), Range.ToEnd((int)@params.n_vocab)));
+                var logits = lmOutput["logits"].__getitem__(ValueTuple.Create(Range.All(), Range.All(), Range.ToEnd((int)@params.get("n_vocab"))));
                 Tensor presents = lmOutput["present"];
                 int?[] pastShape = GPT2.Gpt2Model.PastShape(hParams: @params, batchSize: batchSize);
                 presents.set_shape_(pastShape.Cast<object>());

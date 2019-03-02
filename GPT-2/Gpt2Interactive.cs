@@ -43,9 +43,9 @@
             var hParams = Gpt2Model.DefaultHParams;
             string paramsOverridePath = Path.Combine("models", modelName, "hparams.json");
             var overrides = JsonConvert.DeserializeObject<Dictionary<string, object>>(File.ReadAllText(paramsOverridePath));
-            var pyDict = new PyDict();
+            var pyDict = new PythonDict<object, object>();
             foreach (var entry in overrides)
-                pyDict.SetItem(entry.Key, entry.Value.ToPython());
+                pyDict.Add(entry.Key, entry.Value);
             hParams.override_from_dict(pyDict);
 
             int nCtx = ((dynamic)hParams).n_ctx;

@@ -14,14 +14,14 @@
 
     static class Gpt2Model
     {
-        static readonly dynamic contribTraining = Py.Import("tensorflow.contrib.training");
         static readonly PyObject None = PythonEngine.Eval("None");
-        public static dynamic DefaultHParams => contribTraining.HParams(n_vocab: 0,
-            n_ctx: 1024,
-            n_embd: 768,
-            n_head: 12,
-            n_layer: 12
-        );
+        public static HParams DefaultHParams => new HParams(kwargs: new PythonDict<string, object> {
+            ["n_vocab"] = 0,
+            ["n_ctx"] = 1024,
+            ["n_embd"] = 768,
+            ["n_head"] = 12,
+            ["n_layer"] = 12,
+        });
 
         /// <summary>
         /// Deal with dynamic shape in tensorflow cleanly.

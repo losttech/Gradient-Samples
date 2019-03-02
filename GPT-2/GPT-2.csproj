@@ -7,7 +7,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Gradient" Version="0.1.10-tech-preview4" />
+    <PackageReference Include="Gradient" Version="0.1.10-CI-20190302-081910" />
     <PackageReference Include="morelinq" Version="3.1.0" />
     <PackageReference Include="Newtonsoft.Json" Version="12.0.1" />
   </ItemGroup>
