@@ -90,7 +90,7 @@
                 };
                 result = tf.while_loop(cond: PythonFunctionContainer.Of<object, object, object, bool>(True),
                     body: PythonFunctionContainer.Of(new Func<object, object, object, Tensor[]>(Body)),
-                    maximum_iterations: np.array(length),
+                    maximum_iterations: tf.constant(length),
                     loop_vars: loopVars,
                     shape_invariants: shapeInvariants,
                     back_prop: false)

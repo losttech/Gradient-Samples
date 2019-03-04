@@ -32,7 +32,7 @@
         static Tensor Softmax(Tensor input, int axis = -1)
         {
             var negative = input - tf.reduce_max(input, axis: axis, keepdims: true);
-            var exp = tf.exp(negative);
+            var exp = tf.exp_dyn(negative);
             return exp / tf.reduce_sum(exp, axis: axis, keepdims: true);
         }
 
