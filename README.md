@@ -16,6 +16,8 @@ Samples for [Gradient](https://losttech.software/gradient.html), TensorFlow bind
 > MARIANA:
 > He shall speak not reverbering injurance.
 
+**GPT-2** - latest English [language model from OpenAI](https://blog.openai.com/better-language-models/) (smaller version, pretrained)
+
 **FashionMnistClassification** - standard TensorFlow example, that classifies small pictures of clothes.
 
 **LinearSVM** - incomplete port due to a bug with tf.flags
