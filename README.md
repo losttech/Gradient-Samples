@@ -26,4 +26,4 @@ Samples for [Gradient](https://losttech.software/gradient.html), TensorFlow bind
 
 All models, except GPT-2 **can be modified and trained**. Training code for GPT-2 was not published yet, hence not present.
 
-**LICENSE** - MIT, individual samples might have different license (clearing that up).
+**LICENSE** - MIT, individual samples might have different licenses (clearing that up, see individual sample folders).
