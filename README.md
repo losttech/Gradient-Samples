@@ -25,3 +25,5 @@ Samples for [Gradient](https://losttech.software/gradient.html), TensorFlow bind
 **SimpleApproximation** - uses a simple 1 hidden layer neural network to approximate an arbitrary function.
 
 All models, except GPT-2 **can be modified and trained**. Training code for GPT-2 was not published yet, hence not present.
+
+**LICENSE** - MIT, individual samples might have different license (clearing that up).
