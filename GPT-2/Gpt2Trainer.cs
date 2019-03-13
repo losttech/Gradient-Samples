@@ -12,7 +12,7 @@ namespace Gradient.Samples.GPT2 {
     using tensorflow;
     using tensorflow.contrib.training;
     using tensorflow.train;
-    using DataSet = System.Collections.Generic.List<string>;
+    using DataSet = System.Collections.Generic.List<tensorflow.Tensor>;
     using static System.FormattableString;
     using SharPy.Runtime;
     using System.Threading;
@@ -26,6 +26,11 @@ namespace Gradient.Samples.GPT2 {
         readonly HParams hParams;
         readonly int batchSize;
         readonly int sampleLength;
+        readonly Random random;
+
+        public int SaveEvery { get; set; } = 1000;
+        public int SampleEvery { get; set; } = 100;
+        public int SampleNum { get; set; } = 1;
 
         public static string GetLatestCheckpoint(string modelName, string run)
             => tf.train.latest_checkpoint(Path.Combine(CheckpointDir, run))
@@ -34,11 +39,9 @@ namespace Gradient.Samples.GPT2 {
         public static string GetOriginalCheckpoint(string modelName)
             => tf.train.latest_checkpoint(Path.Combine("models", modelName));
 
-        public void Train(string checkpoint, CancellationToken cancellation) {
-            checkpoint = checkpoint ?? 
-
+        public void Train(string checkpoint, string run, CancellationToken cancellation) {
             new Session().UseSelf(session => {
-                var context = tf.placeholder(tf.int32, new int?[] { batchSize, null });
+                var context = tf.placeholder(tf.int32, new int?[] { this.batchSize, null }.Cast<object>());
                 var output = Gpt2Model.Model(this.hParams, input: context);
                 var loss = tf.reduce_mean(
                     tf.nn.sparse_softmax_cross_entropy_with_logits(
@@ -67,8 +70,7 @@ namespace Gradient.Samples.GPT2 {
                 saver.restore(session, checkpoint);
 
                 Debug.WriteLine("Loading dataset...");
-                var chunks = LoadDataset(this.encoder, this.dataset);
-                var sampler = new TrainingSampler(chunks);
+                var sampler = new TrainingSampler(this.dataset, this.random);
                 Debug.WriteLine($"Dataset has {sampler.TokenCount} tokens");
 
                 int counter = 1;
@@ -93,11 +95,11 @@ namespace Gradient.Samples.GPT2 {
                     var allText = new List<string>();
                     int index = 0;
                     string text = null;
-                    while (index < sampleNum) {
+                    while (index < this.SampleNum) {
                         var @out = session.run(sample, feed_dict: new PythonDict<object, object> {
                             [context] = Enumerable.Repeat(contextTokens, this.batchSize),
                         });
-                        foreach (int i in Enumerable.Range(0, Math.Min(sampleNum - index, this.batchSize))) {
+                        foreach (int i in Enumerable.Range(0, Math.Min(this.SampleNum - index, this.batchSize))) {
                             text = this.encoder.Decode(@out[i]);
                             text = Invariant($"======== SAMPLE {index + 1} ========\n{text}\n");
                             allText.Add(text);
@@ -115,9 +117,9 @@ namespace Gradient.Samples.GPT2 {
                 var startTime = DateTime.Now;
 
                 while (!cancellation.IsCancellationRequested) {
-                    if (counter % saveEvery == 0)
+                    if (counter % this.SaveEvery == 0)
                         Save();
-                    if (counter % sampleEvery == 0)
+                    if (counter % this.SampleEvery == 0)
                         GenerateSamples();
 
                     var batch = Enumerable.Range(0, this.batchSize)
@@ -198,7 +200,7 @@ namespace Gradient.Samples.GPT2 {
             readonly Random random;
             public int TokenCount { get; }
 
-            public TrainingSampler(Random random, List<Tensor> chunks) {
+            public TrainingSampler(List<Tensor> chunks, Random random) {
                 this.random = random;
                 this.chunks = chunks;
                 this.TokenCount = chunks.Sum(chunk => chunk.shape[0]);
