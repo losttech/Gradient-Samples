@@ -68,7 +68,7 @@ namespace Gradient.Samples.GPT2 {
 
                 Debug.WriteLine("Loading dataset...");
                 var chunks = LoadDataset(this.encoder, this.dataset);
-                var sampler = new Sampler(chunks);
+                var sampler = new TrainingSampler(chunks);
                 Debug.WriteLine($"Dataset has {sampler.TokenCount} tokens");
 
                 int counter = 1;
@@ -135,6 +135,9 @@ namespace Gradient.Samples.GPT2 {
 
                     counter++;
                 }
+
+                Debug.WriteLine("Interrupted");
+                Save();
             });
         }
 
@@ -174,10 +177,11 @@ namespace Gradient.Samples.GPT2 {
             return tokenChunks;
         }
 
-        static int? BinarySearch(Func<int, bool> predicate, int lo, int hi) {
+        static int BinarySearch(Func<int, bool> predicate, int lo, int hi) {
             if (predicate == null)
                 throw new ArgumentNullException(nameof(predicate));
-            if (predicate(lo) || !predicate(hi)) return null;
+            if (predicate(lo) || !predicate(hi))
+                throw new ArgumentException();
             while(hi > lo + 1) {
                 int mid = (lo + hi) / 2;
                 if (predicate(mid))
@@ -186,6 +190,38 @@ namespace Gradient.Samples.GPT2 {
                     lo = mid;
             }
             return hi;
+        }
+
+        class TrainingSampler {
+            readonly List<Tensor> chunks;
+            readonly List<int> boundaries = new List<int> { 0 };
+            readonly Random random;
+            public int TokenCount { get; }
+
+            public TrainingSampler(Random random, List<Tensor> chunks) {
+                this.random = random;
+                this.chunks = chunks;
+                this.TokenCount = chunks.Sum(chunk => chunk.shape[0]);
+                foreach(var chunk in chunks)
+                    this.boundaries.Add(this.boundaries[this.boundaries.Count - 1] + chunk.shape[0]);
+            }
+
+            public Tensor Sample(int length) {
+                if (length < this.TokenCount / this.chunks.Count)
+                    throw new ArgumentException($"Dataset files are too small to sample {length} tokens at a time");
+
+                while (true) {
+                    int index = this.random.Next(this.TokenCount - length);
+                    int i = BinarySearch(j => this.boundaries[j] > index,
+                        lo: 0, hi: this.boundaries.Count - 1) - 1;
+
+                    if (this.boundaries[i+1] > index + length) {
+                        int withinChunk = index - this.boundaries[i];
+                        dynamic chunk = this.chunks[i];
+                        return chunk[new Range(withinChunk, withinChunk + length)];
+                    }
+                }
+            }
         }
     }
 }
