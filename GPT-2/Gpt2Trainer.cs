@@ -7,15 +7,21 @@ namespace Gradient.Samples.GPT2 {
     using System.Globalization;
     using System.IO;
     using System.Linq;
+    using System.Threading;
+
     using numpy;
+
     using Python.Runtime;
+
+    using SharPy.Runtime;
+
     using tensorflow;
     using tensorflow.contrib.training;
     using tensorflow.train;
-    using DataSet = System.Collections.Generic.List<tensorflow.Tensor>;
+
     using static System.FormattableString;
-    using SharPy.Runtime;
-    using System.Threading;
+
+    using DataSet = System.Collections.Generic.List<tensorflow.Tensor>;
 
     class Gpt2Trainer {
         const string CheckpointDir = "checkpoint";
@@ -27,6 +33,16 @@ namespace Gradient.Samples.GPT2 {
         readonly int batchSize;
         readonly int sampleLength;
         readonly Random random;
+
+        public Gpt2Trainer(DataSet dataset, Gpt2Encoder encoder, HParams hParams,
+            int batchSize, int sampleLength, Random random) {
+            this.dataset = dataset ?? throw new ArgumentNullException(nameof(dataset));
+            this.encoder = encoder ?? throw new ArgumentNullException(nameof(encoder));
+            this.hParams = hParams ?? throw new ArgumentNullException(nameof(hParams));
+            this.batchSize = batchSize;
+            this.sampleLength = sampleLength;
+            this.random = random ?? throw new ArgumentNullException(nameof(random));
+        }
 
         public int SaveEvery { get; set; } = 1000;
         public int SampleEvery { get; set; } = 100;
@@ -143,7 +159,7 @@ namespace Gradient.Samples.GPT2 {
             });
         }
 
-        static DataSet LoadDataset(Gpt2Encoder encoder, string path) {
+        internal static DataSet LoadDataset(Gpt2Encoder encoder, string path) {
             if (string.IsNullOrEmpty(path))
                 throw new ArgumentNullException(nameof(path));
             var paths = new List<string>();
@@ -155,7 +171,7 @@ namespace Gradient.Samples.GPT2 {
             return LoadDataset(encoder, paths);
         }
 
-        static DataSet LoadDataset(Gpt2Encoder encoder, List<string> fileNames) {
+        internal static DataSet LoadDataset(Gpt2Encoder encoder, List<string> fileNames) {
             if (encoder == null) throw new ArgumentNullException(nameof(encoder));
 
             var tokenChunks = new DataSet();
