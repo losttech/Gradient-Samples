@@ -21,12 +21,13 @@
                 var valuesIndices = tf.nn.top_k_dyn(logits, k: topK);
                 var values = valuesIndices.Item1;
                 var minValues = values[Range.All, -1, tf.newaxis];
-                return tf.where_dyn(logits < minValues,
+                return tf.where_dyn(((dynamic)logits).__lt__(minValues),
                     tf.ones_like(logits, dtype: logits.dtype) * -1e10,
                     logits);
             }
 
-            return tf.cond(tf.equal(topK, 0),
+            Tensor isTopKZero = tf.equal(topK, 0);
+            return tf.cond_dyn(isTopKZero,
                 PythonFunctionContainer.Of(() => logits),
                 PythonFunctionContainer.Of(TopK));
         }

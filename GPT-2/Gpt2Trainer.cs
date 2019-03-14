@@ -21,7 +21,7 @@ namespace Gradient.Samples.GPT2 {
 
     using static System.FormattableString;
 
-    using DataSet = System.Collections.Generic.List<tensorflow.Tensor>;
+    using DataSet = System.Collections.Generic.List<numpy.ndarray>;
 
     class Gpt2Trainer {
         const string CheckpointDir = "checkpoint";
@@ -59,10 +59,12 @@ namespace Gradient.Samples.GPT2 {
             new Session().UseSelf(session => {
                 var context = tf.placeholder(tf.int32, new int?[] { this.batchSize, null }.Cast<object>());
                 var output = Gpt2Model.Model(this.hParams, input: context);
+                Tensor labels = context[Range.All, Range.StartAt(1)];
+                Tensor logits = output["logits"][Range.All, Range.EndAt(new Index(0, fromEnd: true))];
                 var loss = tf.reduce_mean(
-                    tf.nn.sparse_softmax_cross_entropy_with_logits(
-                        labels: context[Range.All, Range.StartAt(1)],
-                        logits: output["logits"][Range.All, Range.EndAt(new Index(0, fromEnd: true))]));
+                    tf.nn.sparse_softmax_cross_entropy_with_logits_dyn(
+                        labels: labels,
+                        logits: logits));
 
                 var sample = Gpt2Sampler.SampleSequence(
                     this.hParams,
@@ -139,10 +141,11 @@ namespace Gradient.Samples.GPT2 {
                         GenerateSamples();
 
                     var batch = Enumerable.Range(0, this.batchSize)
-                        .Select(_ => sampler.Sample(1024));
+                        .Select(_ => sampler.Sample(1024))
+                        .ToArray();
 
-                    var tuple = session.run(new[] { optimizer, loss }, feed_dict: new PythonDict<object, object> {
-                        [context] = batch,
+                    var tuple = session.run_dyn((optimizer, loss), feed_dict: new PythonDict<object, object> {
+                        [context] = batch.ToPythonList(),
                     });
 
                     var lv = tuple[1];
@@ -159,12 +162,12 @@ namespace Gradient.Samples.GPT2 {
             });
         }
 
-        internal static DataSet LoadDataset(Gpt2Encoder encoder, string path) {
+        internal static DataSet LoadDataset(Gpt2Encoder encoder, string path, string pattern = "*") {
             if (string.IsNullOrEmpty(path))
                 throw new ArgumentNullException(nameof(path));
             var paths = new List<string>();
             if (Directory.Exists(path))
-                paths.AddRange(Directory.EnumerateFiles(path, "*", SearchOption.AllDirectories));
+                paths.AddRange(Directory.EnumerateFiles(path, searchPattern: pattern, SearchOption.AllDirectories));
             else
                 paths.Add(path);
 
@@ -186,9 +189,11 @@ namespace Gradient.Samples.GPT2 {
                     npzObject.__exit__();
                 } else {
                     string rawText = File.ReadAllText(file);
+                    if (string.IsNullOrWhiteSpace(rawText))
+                        continue;
                     dynamic numpy = Py.Import("numpy");
-                    var tokens = numpy.stack(encoder.Encode(rawText));
-                    tokenChunks.Add(tokens);
+                    PyObject tokens = numpy.stack(encoder.Encode(rawText));
+                    tokenChunks.Add(ndarray.Wrap(tokens));
                 }
             }
 
@@ -211,20 +216,20 @@ namespace Gradient.Samples.GPT2 {
         }
 
         class TrainingSampler {
-            readonly List<Tensor> chunks;
+            readonly List<ndarray> chunks;
             readonly List<int> boundaries = new List<int> { 0 };
             readonly Random random;
             public int TokenCount { get; }
 
-            public TrainingSampler(List<Tensor> chunks, Random random) {
+            public TrainingSampler(List<ndarray> chunks, Random random) {
                 this.random = random;
                 this.chunks = chunks;
-                this.TokenCount = chunks.Sum(chunk => chunk.shape[0]);
+                this.TokenCount = chunks.Sum(chunk => chunk.shape.Item1);
                 foreach(var chunk in chunks)
-                    this.boundaries.Add(this.boundaries[this.boundaries.Count - 1] + chunk.shape[0]);
+                    this.boundaries.Add(this.boundaries[this.boundaries.Count - 1] + chunk.shape.Item1);
             }
 
-            public Tensor Sample(int length) {
+            public ndarray Sample(int length) {
                 if (length < this.TokenCount / this.chunks.Count)
                     throw new ArgumentException($"Dataset files are too small to sample {length} tokens at a time");
 
@@ -236,7 +241,7 @@ namespace Gradient.Samples.GPT2 {
                     if (this.boundaries[i+1] > index + length) {
                         int withinChunk = index - this.boundaries[i];
                         dynamic chunk = this.chunks[i];
-                        return chunk[new Range(withinChunk, withinChunk + length)];
+                        return chunk[new Range(withinChunk, withinChunk + length - 1)];
                     }
                 }
             }

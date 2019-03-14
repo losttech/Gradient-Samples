@@ -6,6 +6,9 @@
     using ManyConsole.CommandLineUtils;
     class TrainCommand: ConsoleCommand {
         public override int Run(string[] remainingArguments) {
+            this.CheckRequiredArguments();
+            if (remainingArguments.Length < 1)
+                throw new ArgumentNullException("dataset");
             string datasetName = remainingArguments[0];
             string checkpoint = this.Checkpoint;
             switch (this.Checkpoint) {
@@ -18,7 +21,8 @@
             }
 
             var encoder = Gpt2Encoder.LoadEncoder(this.ModelName);
-            var dataset = Gpt2Trainer.LoadDataset(encoder, path: datasetName);
+            string searchPattern = this.Include ?? "*";
+            var dataset = Gpt2Trainer.LoadDataset(encoder, path: datasetName, pattern: searchPattern);
             var hParams = Gpt2Model.LoadHParams(this.ModelName);
             var random = this.Seed == null ? new Random() : new Random(this.Seed.Value);
             var stop = new CancellationTokenSource();
@@ -32,12 +36,13 @@
         public string ModelName { get; set; } = "117M";
         public int? Seed { get; set; }
         public int BatchSize { get; set; } = 1;
-        public int SampleLength { get; set; } = 1023;
+        public int SampleLength { get; set; } = 1024;
         public int SampleNum { get; set; } = 1;
         public int SampleEvery { get; set; } = 100;
         public int SaveEvery { get; set; } = 1000;
         public string RunName { get; set; } = DateTime.Now.ToString("s").Replace(':', '-');
         public string Checkpoint { get; set; } = "latest";
+        public string Include { get; set; }
 
         public TrainCommand() {
             this.IsCommand("train");
@@ -46,6 +51,8 @@
             this.HasOption("s|seed=",
                 "Explicitly set seed for random generators to get reproducible results",
                 (int s) => this.Seed = s);
+            this.HasOption("i|include=", "Pattern of files to include in training",
+                pattern => this.Include = pattern);
             this.HasOption("n|sample-num=", "",
                 (int count) => this.SampleNum = count);
             this.HasOption("b|batch-size=", "Size of the batch, must divide sample-count",
