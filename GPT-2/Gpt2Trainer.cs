@@ -60,7 +60,7 @@ namespace Gradient.Samples.GPT2 {
                 var context = tf.placeholder(tf.int32, new int?[] { this.batchSize, null }.Cast<object>());
                 var output = Gpt2Model.Model(this.hParams, input: context);
                 Tensor labels = context[Range.All, Range.StartAt(1)];
-                Tensor logits = output["logits"][Range.All, Range.EndAt(new Index(0, fromEnd: true))];
+                Tensor logits = output["logits"][Range.All, Range.EndAt(new Index(1, fromEnd: true))];
                 var loss = tf.reduce_mean(
                     tf.nn.sparse_softmax_cross_entropy_with_logits_dyn(
                         labels: labels,
@@ -144,11 +144,12 @@ namespace Gradient.Samples.GPT2 {
                         .Select(_ => sampler.Sample(1024))
                         .ToArray();
 
-                    var tuple = session.run_dyn((optimizer, loss), feed_dict: new PythonDict<object, object> {
+                    var placeholderValues = new PythonDict<object, object> {
                         [context] = batch.ToPythonList(),
-                    });
+                    };
+                    var tuple = session.run_dyn((optimizer, loss), feed_dict: placeholderValues);
 
-                    var lv = tuple[1];
+                    var lv = tuple.Item2;
 
                     avgLoss = (avgLoss.Item1 * 0.99 + lv, avgLoss.Item2 * 0.99 + 1);
 
@@ -222,16 +223,20 @@ namespace Gradient.Samples.GPT2 {
             public int TokenCount { get; }
 
             public TrainingSampler(List<ndarray> chunks, Random random) {
-                this.random = random;
-                this.chunks = chunks;
+                this.random = random ?? throw new ArgumentNullException(nameof(random));
+                this.chunks = chunks ?? throw new ArgumentNullException(nameof(chunks));
                 this.TokenCount = chunks.Sum(chunk => chunk.shape.Item1);
+                if (this.TokenCount == 0)
+                    throw new ArgumentException("Dataset is empty", paramName: nameof(chunks));
+
                 foreach(var chunk in chunks)
                     this.boundaries.Add(this.boundaries[this.boundaries.Count - 1] + chunk.shape.Item1);
             }
 
             public ndarray Sample(int length) {
-                if (length < this.TokenCount / this.chunks.Count)
-                    throw new ArgumentException($"Dataset files are too small to sample {length} tokens at a time");
+                if (length >= this.TokenCount)
+                    throw new ArgumentException($"Dataset files are too small to sample {length} tokens at a time." +
+                        $"Maximum is {this.TokenCount}.");
 
                 while (true) {
                     int index = this.random.Next(this.TokenCount - length);
