@@ -4,7 +4,9 @@
     using System.Collections;
     using System.Collections.Generic;
     using System.Diagnostics;
+    using System.IO;
     using System.Linq;
+    using Newtonsoft.Json;
     using SharPy.Runtime;
     using tensorflow;
     using tensorflow.contrib.training;
@@ -283,6 +285,17 @@
                 result["logits"] = logits;
             });
             return result;
+        }
+
+        public static HParams LoadHParams(string modelName) {
+            var hParams = DefaultHParams;
+            string paramsOverridePath = Path.Combine("models", modelName, "hparams.json");
+            var overrides = JsonConvert.DeserializeObject<Dictionary<string, object>>(File.ReadAllText(paramsOverridePath));
+            var pyDict = new PythonDict<object, object>();
+            foreach (var entry in overrides)
+                pyDict.Add(entry.Key, entry.Value);
+            hParams.override_from_dict(pyDict);
+            return hParams;
         }
     }
 }
