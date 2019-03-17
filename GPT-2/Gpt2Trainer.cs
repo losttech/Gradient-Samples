@@ -109,7 +109,7 @@ namespace Gradient.Samples.GPT2 {
                 }
 
                 void GenerateSamples() {
-                    var contextTokens = sampler.Sample(1);
+                    var contextTokens = np.array(new[] { this.encoder.EndOfText });
                     var allText = new List<string>();
                     int index = 0;
                     string text = null;
@@ -234,9 +234,9 @@ namespace Gradient.Samples.GPT2 {
             }
 
             public ndarray Sample(int length) {
-                if (length >= this.TokenCount)
+                if (length >= this.TokenCount / this.chunks.Count)
                     throw new ArgumentException($"Dataset files are too small to sample {length} tokens at a time." +
-                        $"Maximum is {this.TokenCount}.");
+                        $"Maximum is {this.TokenCount/this.chunks.Count}.");
 
                 while (true) {
                     int index = this.random.Next(this.TokenCount - length);
