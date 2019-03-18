@@ -23,7 +23,7 @@ namespace Gradient.Samples.GPT2 {
 
     using DataSet = System.Collections.Generic.List<numpy.ndarray>;
 
-    class Gpt2Trainer {
+    public class Gpt2Trainer {
         const string CheckpointDir = "checkpoint";
         const string SampleDir = "samples";
 
@@ -217,12 +217,12 @@ namespace Gradient.Samples.GPT2 {
         }
 
         class TrainingSampler {
-            readonly List<ndarray> chunks;
+            readonly DataSet chunks;
             readonly List<int> boundaries = new List<int> { 0 };
             readonly Random random;
             public int TokenCount { get; }
 
-            public TrainingSampler(List<ndarray> chunks, Random random) {
+            public TrainingSampler(DataSet chunks, Random random) {
                 this.random = random ?? throw new ArgumentNullException(nameof(random));
                 this.chunks = chunks ?? throw new ArgumentNullException(nameof(chunks));
                 this.TokenCount = chunks.Sum(chunk => chunk.shape.Item1);
@@ -250,6 +250,19 @@ namespace Gradient.Samples.GPT2 {
                     }
                 }
             }
+        }
+
+        public static string ProcessCheckpointConfig(string checkpoint, string modelName, string runName) {
+            switch (checkpoint) {
+            case "latest":
+                checkpoint = Gpt2Trainer.GetLatestCheckpoint(modelName, runName);
+                break;
+            case "fresh":
+                checkpoint = Gpt2Trainer.GetOriginalCheckpoint(modelName);
+                break;
+            }
+
+            return checkpoint;
         }
     }
 }

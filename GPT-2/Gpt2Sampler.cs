@@ -8,7 +8,7 @@
     using tensorflow.contrib.training;
     using tensorflow.python.ops.variable_scope;
 
-    static class Gpt2Sampler
+    public static class Gpt2Sampler
     {
         static Tensor TopLogits(Tensor logits, int topK)
         {

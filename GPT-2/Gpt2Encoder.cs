@@ -1,4 +1,4 @@
-﻿namespace Gradient.Samples.GPT2
+namespace Gradient.Samples.GPT2
 {
     using System;
     using System.Collections.Generic;
@@ -10,7 +10,7 @@
     using numpy;
     using Python.Runtime;
     using static System.Linq.Enumerable;
-    class Gpt2Encoder
+    public class Gpt2Encoder
     {
         const string EndOfTextPseudoToken = "<|endoftext|>";
 

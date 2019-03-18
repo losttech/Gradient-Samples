@@ -11,7 +11,7 @@
     using tensorflow;
     using tensorflow.contrib.training;
 
-    static class Gpt2Model
+    public static class Gpt2Model
     {
         public static HParams DefaultHParams => new HParams(kwargs: new PythonDict<string, object> {
             ["n_vocab"] = 0,

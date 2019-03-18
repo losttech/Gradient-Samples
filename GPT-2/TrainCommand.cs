@@ -15,15 +15,9 @@
             if (remainingArguments.Length < 1)
                 throw new ArgumentNullException("dataset");
             string datasetName = remainingArguments[0];
-            string checkpoint = this.Checkpoint;
-            switch (this.Checkpoint) {
-            case "latest":
-                checkpoint = Gpt2Trainer.GetLatestCheckpoint(this.ModelName, this.RunName);
-                break;
-            case "fresh":
-                checkpoint = Gpt2Trainer.GetOriginalCheckpoint(this.ModelName);
-                break;
-            }
+            string checkpoint = Gpt2Trainer.ProcessCheckpointConfig(this.Checkpoint,
+                                             modelName: this.ModelName,
+                                             runName: this.RunName);
 
             var encoder = Gpt2Encoder.LoadEncoder(this.ModelName);
             string searchPattern = this.Include ?? "*";
