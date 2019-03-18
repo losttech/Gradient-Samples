@@ -1,4 +1,4 @@
-namespace Gradient.Samples.GPT2
+﻿namespace Gradient.Samples.GPT2
 {
     using System;
     using System.Collections.Generic;
@@ -157,11 +157,13 @@ namespace Gradient.Samples.GPT2
 
         public string Decode(ndarray tokens)
         {
-            string[] tokenStrings = tokens.Cast<object>().Select(t => t.ToString()).ToArray();
-            byte[] bytes = tokenStrings.SelectMany(token => this.decoder[token].Select(@char => this.byteDecoder[@char]))
-                .ToArray();
-            // TODO: error mode!
-            return Encoding.UTF8.GetString(bytes);
+            using (Py.GIL()) {
+                string[] tokenStrings = tokens.Cast<object>().Select(t => t.ToString()).ToArray();
+                byte[] bytes = tokenStrings.SelectMany(token => this.decoder[token].Select(@char => this.byteDecoder[@char]))
+                    .ToArray();
+                // TODO: error mode!
+                return Encoding.UTF8.GetString(bytes);
+            }
         }
 
         public static Gpt2Encoder LoadEncoder(string modelName)
