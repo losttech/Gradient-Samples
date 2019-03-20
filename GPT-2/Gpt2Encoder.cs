@@ -12,7 +12,7 @@ namespace Gradient.Samples.GPT2
     using static System.Linq.Enumerable;
     public class Gpt2Encoder
     {
-        const string EndOfTextPseudoToken = "<|endoftext|>";
+        public const string EndOfTextPseudoToken = "<|endoftext|>";
 
         readonly string errors;
         private readonly IDictionary<string, string> encoder;
@@ -21,11 +21,12 @@ namespace Gradient.Samples.GPT2
         readonly Dictionary<char, byte> byteDecoder;
         readonly Dictionary<(string,string), float> bpeRanks;
 
+        static readonly dynamic noop = tensorflow.tf.no_op(); // ensure Gradient is initialized
         static readonly dynamic regex = Py.Import("regex");
         static readonly dynamic pattern = regex.compile(@"'s|'t|'re|'ve|'m|'ll|'d| ?\p{L}+| ?\p{N}+| ?[^\s\p{L}\p{N}]+|\s+(?!\S)|\s+");
         static readonly Dictionary<byte, char> BytesToUnicode = ComputeBytesToUnicode();
 
-        public string EndOfText => this.encoder[EndOfTextPseudoToken];
+        public string EncodedEndOfText => this.encoder[EndOfTextPseudoToken];
 
         /// <summary>
         /// <para>     Returns list of utf-8 byte and a corresponding list of unicode strings.

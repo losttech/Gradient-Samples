@@ -48,12 +48,12 @@ namespace Gradient.Samples.GPT2 {
         public int SampleEvery { get; set; } = 100;
         public int SampleNum { get; set; } = 1;
 
-        public static string GetLatestCheckpoint(string modelName, string run)
-            => tf.train.latest_checkpoint(Path.Combine(CheckpointDir, run))
-            ?? GetOriginalCheckpoint(modelName);
+        public static string GetLatestCheckpoint(string gpt2Root, string modelName, string run)
+            => tf.train.latest_checkpoint(Path.Combine(gpt2Root, CheckpointDir, run))
+            ?? GetOriginalCheckpoint(gpt2Root, modelName);
 
-        public static string GetOriginalCheckpoint(string modelName)
-            => tf.train.latest_checkpoint(Path.Combine("models", modelName));
+        public static string GetOriginalCheckpoint(string gpt2Root, string modelName)
+            => tf.train.latest_checkpoint(Path.Combine(gpt2Root, "models", modelName));
 
         public void Train(string checkpoint, string run, CancellationToken cancellation) {
             new Session().UseSelf(session => {
@@ -109,7 +109,7 @@ namespace Gradient.Samples.GPT2 {
                 }
 
                 void GenerateSamples() {
-                    var contextTokens = np.array(new[] { this.encoder.EndOfText });
+                    var contextTokens = np.array(new[] { this.encoder.EncodedEndOfText });
                     var allText = new List<string>();
                     int index = 0;
                     string text = null;
@@ -252,13 +252,14 @@ namespace Gradient.Samples.GPT2 {
             }
         }
 
-        public static string ProcessCheckpointConfig(string checkpoint, string modelName, string runName) {
+        public static string ProcessCheckpointConfig(string gpt2Root, string checkpoint,
+            string modelName, string runName) {
             switch (checkpoint) {
             case "latest":
-                checkpoint = Gpt2Trainer.GetLatestCheckpoint(modelName, runName);
+                checkpoint = GetLatestCheckpoint(gpt2Root, modelName, runName);
                 break;
             case "fresh":
-                checkpoint = Gpt2Trainer.GetOriginalCheckpoint(modelName);
+                checkpoint = GetOriginalCheckpoint(gpt2Root, modelName);
                 break;
             }
 
