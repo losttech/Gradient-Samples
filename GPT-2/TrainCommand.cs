@@ -15,9 +15,11 @@
             if (remainingArguments.Length < 1)
                 throw new ArgumentNullException("dataset");
             string datasetName = remainingArguments[0];
-            string checkpoint = Gpt2Trainer.ProcessCheckpointConfig(this.Checkpoint,
-                                             modelName: this.ModelName,
-                                             runName: this.RunName);
+            string checkpoint = Gpt2Trainer.ProcessCheckpointConfig(
+                gpt2Root: Environment.CurrentDirectory,
+                checkpoint: this.Checkpoint,
+                modelName: this.ModelName,
+                runName: this.RunName);
 
             var encoder = Gpt2Encoder.LoadEncoder(this.ModelName);
             string searchPattern = this.Include ?? "*";
@@ -61,7 +63,7 @@
         static DataSet Load(Gpt2Encoder encoder, IEnumerable<string> texts) {
             dynamic numpy = Py.Import("numpy");
             var result = new DataSet();
-            string endOfText = encoder.EndOfText;
+            string endOfText = Gpt2Encoder.EndOfTextPseudoToken;
             var chunk = new List<string>();
             int chunkSize = 0;
             void AddChunk() {
