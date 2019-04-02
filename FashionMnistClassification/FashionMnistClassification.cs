@@ -12,6 +12,7 @@
         static void Main() {
             GradientLog.OutputWriter = Console.Out;
 
+            // requires Internet connection
             (dynamic train, dynamic test) = tf.keras.datasets.fashion_mnist.load_data();
             // will be able to do (trainImages, trainLabels) = train;
             ndarray trainImages = train.Item1;
@@ -22,7 +23,7 @@
             bool loaded = 60000 == trainImages.Length;
             Debug.Assert(loaded);
 
-            var model = new Sequential(new PythonList<dynamic> {
+            var model = new Sequential(new Layer[] {
                 // will be able to do: new Flatten(kwargs: new { input_shape = (28, 28) }),
                 new Flatten(kwargs: new PythonDict<string, object> { ["input_shape"] = (28, 28) }),
                 new Dense(units: 128, activation: tf.nn.relu_fn),
