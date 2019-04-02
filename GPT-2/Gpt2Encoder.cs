@@ -1,4 +1,4 @@
-﻿namespace Gradient.Samples.GPT2
+namespace Gradient.Samples.GPT2
 {
     using System;
     using System.Collections.Generic;
@@ -10,8 +10,10 @@
     using numpy;
     using Python.Runtime;
     using static System.Linq.Enumerable;
-    class Gpt2Encoder
+    public class Gpt2Encoder
     {
+        const string EndOfTextPseudoToken = "<|endoftext|>";
+
         readonly string errors;
         private readonly IDictionary<string, string> encoder;
         private readonly Dictionary<string, string> decoder;
@@ -22,6 +24,8 @@
         static readonly dynamic regex = Py.Import("regex");
         static readonly dynamic pattern = regex.compile(@"'s|'t|'re|'ve|'m|'ll|'d| ?\p{L}+| ?\p{N}+| ?[^\s\p{L}\p{N}]+|\s+(?!\S)|\s+");
         static readonly Dictionary<byte, char> BytesToUnicode = ComputeBytesToUnicode();
+
+        public string EndOfText => this.encoder[EndOfTextPseudoToken];
 
         /// <summary>
         /// <para>     Returns list of utf-8 byte and a corresponding list of unicode strings.

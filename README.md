@@ -3,7 +3,7 @@ Samples for [Gradient](https://losttech.software/gradient.html), TensorFlow bind
 
 **BasicMath**- creates two constant tensors and performs simple algebraic operations on them
 
-**CharRNN** - generates semi-sensical text in the style of input. For example:
+**CharRNN** - generates semi-sensical text in the style of input. For example (Shakespeare):
 > LOST:
 > What is your name beautiful princess?
 >
@@ -16,7 +16,8 @@ Samples for [Gradient](https://losttech.software/gradient.html), TensorFlow bind
 > MARIANA:
 > He shall speak not reverbering injurance.
 
-**GPT-2** - latest English [language model from OpenAI](https://blog.openai.com/better-language-models/) (smaller version, pretrained)
+**GPT-2** - latest English [language model from OpenAI](https://blog.openai.com/better-language-models/)
+(smaller version, pretrained). Added fine-tuning from https://github.com/nshepperd/gpt-2.
 
 **FashionMnistClassification** - standard TensorFlow example, that classifies small pictures of clothes.
 
@@ -24,6 +25,6 @@ Samples for [Gradient](https://losttech.software/gradient.html), TensorFlow bind
 
 **SimpleApproximation** - uses a simple 1 hidden layer neural network to approximate an arbitrary function.
 
-All models, except GPT-2 **can be modified and trained**. Training code for GPT-2 was not published yet, hence not present.
+All models **can be modified and trained**.
 
 **LICENSE** - MIT, individual samples might have different licenses (clearing that up, see individual sample folders).

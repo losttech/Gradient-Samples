@@ -4,6 +4,7 @@
     using System.Collections.Generic;
     using System.IO;
     using System.Linq;
+    using ManyConsole.CommandLineUtils;
     using Newtonsoft.Json;
     using numpy;
     using Python.Runtime;
@@ -11,7 +12,7 @@
     using tensorflow;
     using tensorflow.train;
 
-    static class Gpt2Interactive
+    class Gpt2Interactive: ConsoleCommand
     {
         /// <summary>
         /// Interactively run the model
@@ -32,19 +33,12 @@
         /// special setting meaning no restrictions. 40 generally is a good value.
         /// </param>
         public static void Run(string modelName = "117M", int? seed = null, int sampleCount = 1,
-            int batchSize = 1, int? length = null, float temperature = 1, int topK = 0)
-        {
+            int batchSize = 1, int? length = null, float temperature = 1, int topK = 0) {
             if (sampleCount % batchSize != 0)
                 throw new ArgumentException();
 
             var encoder = Gpt2Encoder.LoadEncoder(modelName);
-            var hParams = Gpt2Model.DefaultHParams;
-            string paramsOverridePath = Path.Combine("models", modelName, "hparams.json");
-            var overrides = JsonConvert.DeserializeObject<Dictionary<string, object>>(File.ReadAllText(paramsOverridePath));
-            var pyDict = new PythonDict<object, object>();
-            foreach (var entry in overrides)
-                pyDict.Add(entry.Key, entry.Value);
-            hParams.override_from_dict(pyDict);
+            var hParams = Gpt2Model.LoadHParams(modelName);
 
             int nCtx = ((dynamic)hParams).n_ctx;
             if (length is null)
@@ -68,27 +62,22 @@
                 var checkpoint = tf.train.latest_checkpoint(Path.Combine("models", modelName));
                 saver.restore(sess, checkpoint);
 
-                while (true)
-                {
+                while (true) {
                     string text;
-                    do
-                    {
+                    do {
                         Console.Write("Model prompt >>> ");
                         text = Console.ReadLine();
                         if (string.IsNullOrEmpty(text))
                             Console.WriteLine("Prompt should not be empty");
-                    }  while(string.IsNullOrEmpty(text));
+                    } while (string.IsNullOrEmpty(text));
 
                     var contextTokens = encoder.Encode(text);
                     int generated = 0;
-                    foreach(var _ in Enumerable.Range(0, sampleCount / batchSize))
-                    {
-                        var @out = sess.run(output, feed_dict: new PythonDict<object, object>
-                        {
+                    foreach (var _ in Enumerable.Range(0, sampleCount / batchSize)) {
+                        var @out = sess.run(output, feed_dict: new PythonDict<object, object> {
                             [context] = Enumerable.Repeat(contextTokens, batchSize),
                         })[Range.All, Range.StartAt(contextTokens.Count)];
-                        foreach(int i in Enumerable.Range(0, batchSize))
-                        {
+                        foreach (int i in Enumerable.Range(0, batchSize)) {
                             generated++;
                             ndarray part = @out[i];
                             text = encoder.Decode(part);
@@ -100,6 +89,44 @@
                     Console.WriteLine(Delimiter);
                 }
             });
+        }
+
+        public Gpt2Interactive() {
+            this.IsCommand("run");
+            this.HasOption("m|model=", "Which model to use", name => this.ModelName = name);
+            this.HasOption("s|seed=",
+                "Explicitly set seed for random generators to get reproducible results",
+                (int s) => this.Seed = s);
+            this.HasOption("c|sample-count=", "Number of samples to generate for each prompt",
+                (int count) => this.SampleCount = count);
+            this.HasOption("b|batch-size=", "Size of the batch, must divide sample-count",
+                (int size) => this.BatchSize = size);
+            this.HasOption("l|sample-length=", "Length of the generated samples",
+                (int len) => this.Length = len);
+            this.HasOption("t|temperature=", "Randomness of the generated text",
+                (float t) => this.Temperature = t);
+            this.HasOption("k|top-k=", "Number of words to consider for each step",
+                (int k) => this.TopK = k);
+        }
+
+        public string ModelName { get; set; } = "117M";
+        public int? Seed { get; set; }
+        public int SampleCount { get; set; } = 1;
+        public int BatchSize { get; set; } = 1;
+        public int? Length { get; set; }
+        public float Temperature { get; set; } = 1;
+        public int TopK { get; set; }
+
+        public override int Run(string[] remainingArguments) {
+            Run(modelName: this.ModelName,
+                seed: this.Seed,
+                sampleCount: this.SampleCount,
+                batchSize: this.BatchSize,
+                length: this.Length,
+                temperature: this.Temperature,
+                topK: this.TopK);
+
+            return 0;
         }
 
         static readonly string Delimiter = new string(Enumerable.Repeat('=', 40).ToArray());
