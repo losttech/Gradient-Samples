@@ -19,6 +19,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Repo", "Repo", "{ED07C81C-8
 		README.md = README.md
 	EndProjectSection
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "LinearSVM", "LinearSVM\LinearSVM.csproj", "{EF3C4FC8-9802-4616-B457-09143D51F012}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -45,6 +47,10 @@ Global
 		{EC538A23-B1AD-45CC-A9FC-4C58C9209FF9}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{EC538A23-B1AD-45CC-A9FC-4C58C9209FF9}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{EC538A23-B1AD-45CC-A9FC-4C58C9209FF9}.Release|Any CPU.Build.0 = Release|Any CPU
+		{EF3C4FC8-9802-4616-B457-09143D51F012}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{EF3C4FC8-9802-4616-B457-09143D51F012}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{EF3C4FC8-9802-4616-B457-09143D51F012}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{EF3C4FC8-9802-4616-B457-09143D51F012}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

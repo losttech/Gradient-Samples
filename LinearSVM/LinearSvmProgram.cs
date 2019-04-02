@@ -1,75 +1,135 @@
 ﻿namespace LinearSVM {
     using System;
+    using System.Collections;
+    using System.Diagnostics;
     using System.Dynamic;
     using System.Linq;
     using Gradient;
+    using Gradient.ManualWrappers;
+    using ManyConsole.CommandLineUtils;
     using Python.Runtime;
     using SharPy.Runtime;
     using tensorflow;
-    using tensorflow.flags;
+    using tensorflow.train;
 
-    static class LinearSvmProgram {
-        static dynamic FLAGS;
+    class LinearSvmProgram {
         static readonly Random random = new Random();
         static dynamic np;
 
-        static void Main() {
-            GradientLog.OutputWriter = Console.Out;
+        readonly LinearSvmCommand flags;
 
-            np = PythonEngine.ImportModule("numpy");
-            // WIP
-            // flags do not work. See https://github.com/pythonnet/pythonnet/issues/792
-            //flags.DEFINE_integer("batch_size", 32, "Number of samples per batch");
-            //flags.DEFINE_integer("num_steps", 500, "Number of training steps.");
-            //flags.DEFINE_boolean("is_evaluation", true, "Whether or not the model should be evaluated.");
-
-            //flags.DEFINE_float("C_param", 0.1, "penalty parameter of the error term.");
-            //flags.DEFINE_float(
-            //    "Reg_param", 1.0,
-            //    "penalty parameter of the error term.");
-            //flags.DEFINE_float(
-            //    "delta", 1.0,
-            //    "The parameter set for margin.");
-            //flags.DEFINE_float(
-            //    "initial_learning_rate", 0.1,
-            //    "The initial learning rate for optimization.");
-
-            //FLAGS = flags.FLAGS;
-
-            FLAGS = new {
-                batch_size = 32,
-                num_steps = 500,
-                is_evaluation = true,
-                C_param = 0.1,
-                Reg_param = 1.0,
-                delta = 1.0,
-                initial_learning_rate = 0.1,
-            };
+        public LinearSvmProgram(LinearSvmCommand flags)
+        {
+            this.flags = flags ?? throw new ArgumentNullException(nameof(flags));
         }
 
-        static dynamic Loss(dynamic W, dynamic b, dynamic inputData, dynamic targetData) {
+        static int Main(string[] args) {
+            GradientLog.OutputWriter = Console.Out;
+
+            tf.no_op();
+
+            np = PythonEngine.ImportModule("numpy");
+            return ConsoleCommandDispatcher.DispatchCommand(
+               ConsoleCommandDispatcher.FindCommandsInSameAssemblyAs(typeof(LinearSvmProgram)),
+               args, Console.Out);
+        }
+
+        public int Run()
+        {
+            dynamic datasets = Py.Import("sklearn.datasets");
+            dynamic slice = PythonEngine.Eval("slice");
+            var iris = datasets.load_iris();
+            dynamic firstTwoFeaturesIndex = new PyTuple(new PyObject[] {
+                slice(null),
+                slice(null, 2)
+            });
+            var input = iris.data.__getitem__(firstTwoFeaturesIndex);
+            IEnumerable target = iris.target;
+            var expectedOutput = target.Cast<dynamic>()
+                .Select(l => (int)l == 0 ? 1 : -1)
+                .ToArray();
+            int trainCount = expectedOutput.Length * 4 / 5;
+            var trainIn = numpy.np.array(((IEnumerable)input).Cast<dynamic>().Take(trainCount));
+            var trainOut = numpy.np.array(expectedOutput.Take(trainCount));
+            var testIn = numpy.np.array(((IEnumerable)input).Cast<dynamic>().Skip(trainCount));
+            var testOut = numpy.np.array(expectedOutput.Skip(trainCount));
+
+            var inPlace = tf.placeholder(shape: new int?[] { null, input.shape[1] }.Cast<object>(), dtype: tf.float32);
+            var outPlace = tf.placeholder(shape: new int?[] { null, 1 }.Cast<object>(), dtype: tf.float32);
+            var w = new Variable(tf.random_normal(shape: new TensorShape((int)input.shape[1], 1)));
+            var b = new Variable(tf.random_normal(shape: new TensorShape(1, 1)));
+
+            var totalLoss = Loss(w, b, inPlace, outPlace);
+            var accuracy = Inference(w, b, inPlace, outPlace);
+
+            var trainOp = new GradientDescentOptimizer(this.flags.InitialLearningRate).minimize(totalLoss);
+
+            var expectedTrainOut = trainOut.reshape((trainOut.Length, 1));
+            var expectedTestOut = testOut.reshape((testOut.Length, 1));
+
+            new Session().UseSelf(sess =>
+            {
+                var init = tensorflow.tf.global_variables_initializer();
+                sess.run(init);
+                for(int step = 0; step < this.flags.StepCount; step++)
+                {
+                    (numpy.ndarray @in, numpy.ndarray @out) = NextBatch(trainIn, trainOut, sampleCount: this.flags.BatchSize);
+                    var feed = new PythonDict<object, object> {
+                        [inPlace] = @in,
+                        [outPlace] = @out,
+                    };
+                    sess.run(trainOp, feed_dict: feed);
+
+                    var loss = sess.run(totalLoss, feed_dict: feed);
+                    var trainAcc = sess.run(accuracy, new PythonDict<object, object>
+                    {
+                        [inPlace] = trainIn,
+                        [outPlace] = expectedTrainOut,
+                    });
+                    var testAcc = sess.run(accuracy, new PythonDict<object, object>
+                    {
+                        [inPlace] = testIn,
+                        [outPlace] = expectedTestOut,
+                    });
+
+                    if ((step + 1) % 100 == 0)
+                        Console.WriteLine($"Step{step}: test acc {testAcc}, train acc {trainAcc}");
+                }
+
+                //if (this.flags.IsEvaluation)
+                //{
+
+                //}
+            });
+
+            return 0;
+        }
+
+        dynamic Loss(dynamic W, dynamic b, dynamic inputData, dynamic targetData) {
             var logits = tf.subtract(tf.matmul(inputData, W), b);
             var normTerm = tf.divide(tf.reduce_sum(tf.multiply(tf.transpose(W), W)), 2);
-            var classificationLoss = tf.reduce_mean(tf.maximum(0.0, tf.subtract(FLAGS.delta, tf.multiply(logits, targetData))));
-            var totalLoss = tf.add(tf.multiply(FLAGS.C_param, classificationLoss), tf.multiply(FLAGS.Reg_param, normTerm));
+            var classificationLoss = tf.reduce_mean(tf.maximum(0.0, tf.subtract(this.flags.Delta, tf.multiply(logits, targetData))));
+            var totalLoss = tf.add_dyn(tf.multiply(this.flags.C, classificationLoss), tf.multiply(this.flags.Reg, normTerm));
             return totalLoss;
         }
 
-        static dynamic Inference(dynamic W, dynamic b, dynamic inputData, dynamic targetData) {
-            var prediction = tf.sign(tf.subtract(tf.matmul(inputData, W), b));
+        static dynamic Inference(IGraphNodeBase W, IGraphNodeBase b, dynamic inputData, dynamic targetData) {
+            var prediction = tf.sign_dyn(tf.subtract(tf.matmul(inputData, W), b));
             var accuracy = tf.reduce_mean(tf.cast(tf.equal(prediction, targetData), tf.float32));
             return accuracy;
         }
 
-        static dynamic NextBatch(dynamic inputData, dynamic targetData, int? sampleCount = null) {
-            sampleCount = sampleCount ?? FLAGS.batch_size;
+        (numpy.ndarray, numpy.ndarray) NextBatch(dynamic inputData, dynamic targetData, int? sampleCount = null) {
+            sampleCount = sampleCount ?? this.flags.BatchSize;
             int max = inputData.Length;
             var indexes = Enumerable.Range(0, sampleCount.Value)
                 .Select(_ => random.Next(max))
                 .ToArray();
 
-            var inputBatch = inputData[indexes];
-            var outputBatch = np.transpose(new[] { targetData[indexes] });
+            numpy.ndarray inputBatch = inputData[indexes];
+            numpy.ndarray outputBatch = np.reshape(targetData[indexes], (sampleCount.Value, 1));
+            if (outputBatch == null)
+                throw new InvalidOperationException();
             return (inputBatch, outputBatch);
         }
 
