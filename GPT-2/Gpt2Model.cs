@@ -28,7 +28,7 @@
         {
             IEnumerable<int?> @static = tensor.shape.as_list();
             dynamic dynamic = tf.shape(tensor);
-            return @static.Select((size, index) => size == null ? (object)dynamic[index] : size).ToArray();
+            return @static.Select((size, index) => size ?? (object)dynamic[index]).ToArray();
         }
 
         static Tensor Softmax(Tensor input, int axis = -1)
