@@ -24,7 +24,6 @@ namespace Gradient.Samples.GPT2 {
     using DataSet = System.Collections.Generic.List<numpy.ndarray>;
 
     public class Gpt2Trainer {
-        const string CheckpointDir = "checkpoint";
         const string SampleDir = "samples";
 
         readonly DataSet dataset;
@@ -47,13 +46,6 @@ namespace Gradient.Samples.GPT2 {
         public int SaveEvery { get; set; } = 1000;
         public int SampleEvery { get; set; } = 100;
         public int SampleNum { get; set; } = 1;
-
-        public static string GetLatestCheckpoint(string gpt2Root, string modelName, string run)
-            => tf.train.latest_checkpoint(Path.Combine(gpt2Root, CheckpointDir, run))
-            ?? GetOriginalCheckpoint(gpt2Root, modelName);
-
-        public static string GetOriginalCheckpoint(string gpt2Root, string modelName)
-            => tf.train.latest_checkpoint(Path.Combine(gpt2Root, "models", modelName));
 
         public void Train(string checkpoint, string run, CancellationToken cancellation) {
             new Session().UseSelf(session => {
@@ -92,11 +84,11 @@ namespace Gradient.Samples.GPT2 {
                 Debug.WriteLine($"Dataset has {sampler.TokenCount} tokens");
 
                 int counter = 1;
-                string counterFile = Path.Combine(CheckpointDir, run, "counter");
+                string counterFile = Path.Combine(Gpt2Checkpoints.CheckpointDir, run, "counter");
                 if (File.Exists(counterFile))
                     counter = int.Parse(File.ReadAllText(counterFile), CultureInfo.InvariantCulture) + 1;
 
-                string runCheckpointDir = Path.Combine(CheckpointDir, run);
+                string runCheckpointDir = Path.Combine(Gpt2Checkpoints.CheckpointDir, run);
                 string runSampleDir = Path.Combine(SampleDir, run);
 
                 void Save() {
@@ -163,59 +155,6 @@ namespace Gradient.Samples.GPT2 {
             });
         }
 
-        internal static DataSet LoadDataset(Gpt2Encoder encoder, string path, string pattern = "*") {
-            if (string.IsNullOrEmpty(path))
-                throw new ArgumentNullException(nameof(path));
-            var paths = new List<string>();
-            if (Directory.Exists(path))
-                paths.AddRange(Directory.EnumerateFiles(path, searchPattern: pattern, SearchOption.AllDirectories));
-            else
-                paths.Add(path);
-
-            return LoadDataset(encoder, paths);
-        }
-
-        internal static DataSet LoadDataset(Gpt2Encoder encoder, List<string> fileNames) {
-            if (encoder == null) throw new ArgumentNullException(nameof(encoder));
-
-            var tokenChunks = new DataSet();
-            foreach (string file in fileNames) {
-                Debug.WriteLine($"Reading {file}");
-                if (Path.GetExtension(file) == ".npz") {
-                    // pre-encoded
-                    dynamic npzObject = np.load(file);
-                    var npz = npzObject.__enter__();
-                    foreach (var item in npz.files)
-                        tokenChunks.Add(npz[item]);
-                    npzObject.__exit__();
-                } else {
-                    string rawText = File.ReadAllText(file);
-                    if (string.IsNullOrWhiteSpace(rawText))
-                        continue;
-                    dynamic numpy = Py.Import("numpy");
-                    PyObject tokens = numpy.stack(encoder.Encode(rawText));
-                    tokenChunks.Add(ndarray.Wrap(tokens));
-                }
-            }
-
-            return tokenChunks;
-        }
-
-        static int BinarySearch(Func<int, bool> predicate, int lo, int hi) {
-            if (predicate == null)
-                throw new ArgumentNullException(nameof(predicate));
-            if (predicate(lo) || !predicate(hi))
-                throw new ArgumentException();
-            while(hi > lo + 1) {
-                int mid = (lo + hi) / 2;
-                if (predicate(mid))
-                    hi = mid;
-                else
-                    lo = mid;
-            }
-            return hi;
-        }
-
         class TrainingSampler {
             readonly DataSet chunks;
             readonly List<int> boundaries = new List<int> { 0 };
@@ -240,7 +179,7 @@ namespace Gradient.Samples.GPT2 {
 
                 while (true) {
                     int index = this.random.Next(this.TokenCount - length);
-                    int i = BinarySearch(j => this.boundaries[j] > index,
+                    int i = Algo.BinarySearch(j => this.boundaries[j] > index,
                         lo: 0, hi: this.boundaries.Count - 1) - 1;
 
                     if (this.boundaries[i+1] > index + length) {
@@ -250,18 +189,6 @@ namespace Gradient.Samples.GPT2 {
                     }
                 }
             }
-        }
-
-        public static string ProcessCheckpointConfig(string gpt2Root, string checkpoint,
-            string modelName, string runName) {
-            switch (checkpoint) {
-            case "latest":
-                return GetLatestCheckpoint(gpt2Root, modelName, runName);
-            case "fresh":
-                return GetOriginalCheckpoint(gpt2Root, modelName);
-            }
-
-            return checkpoint;
         }
     }
 }

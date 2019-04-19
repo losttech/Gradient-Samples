@@ -15,7 +15,7 @@
             if (remainingArguments.Length < 1)
                 throw new ArgumentNullException("dataset");
             string datasetName = remainingArguments[0];
-            string checkpoint = Gpt2Trainer.ProcessCheckpointConfig(
+            string checkpoint = Gpt2Checkpoints.ProcessCheckpointConfig(
                 gpt2Root: Environment.CurrentDirectory,
                 checkpoint: this.Checkpoint,
                 modelName: this.ModelName,
@@ -25,7 +25,7 @@
             string searchPattern = this.Include ?? "*";
             var dataset = searchPattern.EndsWith("*.csv")
                 ? LoadCsv(encoder, root: datasetName, field: this.ColumnName)
-                : Gpt2Trainer.LoadDataset(encoder, path: datasetName, pattern: searchPattern);
+                : Gpt2Dataset.LoadDataset(encoder, path: datasetName, pattern: searchPattern);
             var hParams = Gpt2Model.LoadHParams(this.ModelName);
             var random = this.Seed == null ? new Random() : new Random(this.Seed.Value);
             var stop = new CancellationTokenSource();
