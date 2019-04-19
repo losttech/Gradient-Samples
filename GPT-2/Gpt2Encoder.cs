@@ -91,7 +91,7 @@
         readonly Dictionary<string, string> cache = new Dictionary<string, string>();
         string BPE(string token)
         {
-            if (this.cache.TryGetValue(token, out var result))
+            if (this.cache.TryGetValue(token, out string result))
                 return result;
             string[] word = token.Select(c => c.ToString()).ToArray();
             var pairs = GetPairs(word);
@@ -150,7 +150,7 @@
                 string encoded = new string(Encoding.UTF8.GetBytes(token)
                     .Select(@byte => this.byteEncoder[@byte]).ToArray());
                 string bpe = this.BPE(encoded);
-                foreach (var bpeToken in bpe.Split(' '))
+                foreach (string bpeToken in bpe.Split(' '))
                     bpeTokens.Add(this.encoder[bpeToken]);
             }
             return bpeTokens;

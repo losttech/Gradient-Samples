@@ -256,11 +256,9 @@ namespace Gradient.Samples.GPT2 {
             string modelName, string runName) {
             switch (checkpoint) {
             case "latest":
-                checkpoint = GetLatestCheckpoint(gpt2Root, modelName, runName);
-                break;
+                return GetLatestCheckpoint(gpt2Root, modelName, runName);
             case "fresh":
-                checkpoint = GetOriginalCheckpoint(gpt2Root, modelName);
-                break;
+                return GetOriginalCheckpoint(gpt2Root, modelName);
             }
 
             return checkpoint;
