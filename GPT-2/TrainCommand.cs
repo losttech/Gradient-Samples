@@ -30,7 +30,8 @@
             var random = this.Seed == null ? new Random() : new Random(this.Seed.Value);
             var stop = new CancellationTokenSource();
             Console.CancelKeyPress += delegate { stop.Cancel(); };
-            new Gpt2Trainer(dataset, encoder, hParams, this.BatchSize, this.SampleLength, random)
+            new Gpt2Trainer<string>(dataset, encoder, sampleStartToken: encoder.EncodedEndOfText,
+                    hParams, this.BatchSize, this.SampleLength, random)
                 .Train(checkpoint, this.RunName, stop.Token);
 
             return 0;

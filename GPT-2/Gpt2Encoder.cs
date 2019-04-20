@@ -10,7 +10,7 @@ namespace Gradient.Samples.GPT2
     using numpy;
     using Python.Runtime;
     using static System.Linq.Enumerable;
-    public class Gpt2Encoder
+    public class Gpt2Encoder: IGpt2Encoder<string>
     {
         public const string EndOfTextPseudoToken = "<|endoftext|>";
 

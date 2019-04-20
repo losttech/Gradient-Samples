@@ -23,20 +23,24 @@ namespace Gradient.Samples.GPT2 {
 
     using DataSet = System.Collections.Generic.List<numpy.ndarray>;
 
-    public class Gpt2Trainer {
+    public class Gpt2Trainer<T> {
         const string SampleDir = "samples";
 
         readonly DataSet dataset;
-        readonly Gpt2Encoder encoder;
+        readonly IGpt2Encoder<T> encoder;
+        readonly string sampleStartToken;
         readonly HParams hParams;
         readonly int batchSize;
         readonly int sampleLength;
         readonly Random random;
 
-        public Gpt2Trainer(DataSet dataset, Gpt2Encoder encoder, HParams hParams,
+        public Gpt2Trainer(DataSet dataset, IGpt2Encoder<T> encoder,
+            string sampleStartToken,
+            HParams hParams,
             int batchSize, int sampleLength, Random random) {
             this.dataset = dataset ?? throw new ArgumentNullException(nameof(dataset));
             this.encoder = encoder ?? throw new ArgumentNullException(nameof(encoder));
+            this.sampleStartToken = sampleStartToken;
             this.hParams = hParams ?? throw new ArgumentNullException(nameof(hParams));
             this.batchSize = batchSize;
             this.sampleLength = sampleLength;
@@ -84,53 +88,18 @@ namespace Gradient.Samples.GPT2 {
                 Debug.WriteLine($"Dataset has {sampler.TokenCount} tokens");
 
                 int counter = 1;
-                string counterFile = Path.Combine(Gpt2Checkpoints.CheckpointDir, run, "counter");
+                string counterFile = GetCounterFileName(run);
                 if (File.Exists(counterFile))
                     counter = int.Parse(File.ReadAllText(counterFile), CultureInfo.InvariantCulture) + 1;
-
-                string runCheckpointDir = Path.Combine(Gpt2Checkpoints.CheckpointDir, run);
-                string runSampleDir = Path.Combine(SampleDir, run);
-
-                void Save() {
-                    Directory.CreateDirectory(runCheckpointDir);
-                    Debug.WriteLine("Saving " + Path.Combine(runCheckpointDir, Invariant($"model-{counter}")));
-                    saver.save(session,
-                        Path.Combine(runCheckpointDir, "model"),
-                        global_step: counter);
-                    File.WriteAllText(path: counterFile, contents: Invariant($"{counter}"));
-                }
-
-                void GenerateSamples() {
-                    var contextTokens = np.array(new[] { this.encoder.EncodedEndOfText });
-                    var allText = new List<string>();
-                    int index = 0;
-                    string text = null;
-                    while (index < this.SampleNum) {
-                        var @out = session.run(sample, feed_dict: new PythonDict<object, object> {
-                            [context] = Enumerable.Repeat(contextTokens, this.batchSize),
-                        });
-                        foreach (int i in Enumerable.Range(0, Math.Min(this.SampleNum - index, this.batchSize))) {
-                            text = this.encoder.Decode(@out[i]);
-                            text = Invariant($"======== SAMPLE {index + 1} ========\n{text}\n");
-                            allText.Add(text);
-                            index++;
-                        }
-                    }
-                    Debug.WriteLine(text);
-                    Directory.CreateDirectory(runSampleDir);
-                    File.WriteAllLines(
-                        path: Path.Combine(runSampleDir, Invariant($"samples-{counter}")),
-                        contents: allText);
-                }
 
                 var avgLoss = (0.0, 0.0);
                 var startTime = DateTime.Now;
 
                 while (!cancellation.IsCancellationRequested) {
                     if (counter % this.SaveEvery == 0)
-                        Save();
+                        Save(run, counter, session, saver);
                     if (counter % this.SampleEvery == 0)
-                        GenerateSamples();
+                        GenerateSamples(session, sample, context, run, counter);
 
                     var batch = Enumerable.Range(0, this.batchSize)
                         .Select(_ => sampler.Sample(1024))
@@ -151,8 +120,43 @@ namespace Gradient.Samples.GPT2 {
                 }
 
                 Debug.WriteLine("Interrupted");
-                Save();
+                Save(run, counter, session, saver);
             });
+        }
+
+        static string GetCounterFileName(string run)
+            => Path.Combine(Gpt2Checkpoints.CheckpointDir, run, "counter");
+
+        static void Save(string run, int counter, Session session, Saver saver) {
+            string counterFile = GetCounterFileName(run);
+            string runCheckpointDir = Path.Combine(Gpt2Checkpoints.CheckpointDir, run);
+            Directory.CreateDirectory(runCheckpointDir);
+            Debug.WriteLine("Saving " + Path.Combine(runCheckpointDir, Invariant($"model-{counter}")));
+            saver.save(session,
+                Path.Combine(runCheckpointDir, "model"),
+                global_step: counter);
+            File.WriteAllText(path: counterFile, contents: Invariant($"{counter}"));
+        }
+
+        void GenerateSamples(Session session, dynamic sample, dynamic context, string run, int counter) {
+            var contextTokens = np.array(new[] {this.sampleStartToken});
+            var allText = new List<string>();
+            int index = 0;
+            string text = null;
+            while (index < this.SampleNum) {
+                var @out = session.run(sample, feed_dict: new PythonDict<object, object> {[context] = Enumerable.Repeat(contextTokens, this.batchSize),});
+                foreach (int i in Enumerable.Range(0, Math.Min(this.SampleNum - index, this.batchSize))) {
+                    text = this.encoder.Decode(@out[i]);
+                    text = Invariant($"======== SAMPLE {index + 1} ========\n{text}\n");
+                    allText.Add(text);
+                    index++;
+                }
+            }
+
+            Debug.WriteLine(text);
+            string runSampleDir = Path.Combine(SampleDir, run);
+            Directory.CreateDirectory(runSampleDir);
+            File.WriteAllLines(path: Path.Combine(runSampleDir, Invariant($"samples-{counter}")), contents: allText);
         }
 
         class TrainingSampler {
