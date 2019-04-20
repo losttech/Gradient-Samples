@@ -23,33 +23,20 @@ namespace Gradient.Samples.GPT2 {
 
     using DataSet = System.Collections.Generic.List<numpy.ndarray>;
 
-    public class Gpt2Trainer<T> {
-        const string SampleDir = "samples";
-
+    public class Gpt2Trainer {
         readonly DataSet dataset;
-        readonly IGpt2Encoder<T> encoder;
-        readonly string sampleStartToken;
         readonly HParams hParams;
         readonly int batchSize;
-        readonly int sampleLength;
         readonly Random random;
 
-        public Gpt2Trainer(DataSet dataset, IGpt2Encoder<T> encoder,
-            string sampleStartToken,
-            HParams hParams,
-            int batchSize, int sampleLength, Random random) {
+        public Gpt2Trainer(DataSet dataset, HParams hParams, int batchSize, Random random) {
             this.dataset = dataset ?? throw new ArgumentNullException(nameof(dataset));
-            this.encoder = encoder ?? throw new ArgumentNullException(nameof(encoder));
-            this.sampleStartToken = sampleStartToken;
             this.hParams = hParams ?? throw new ArgumentNullException(nameof(hParams));
             this.batchSize = batchSize;
-            this.sampleLength = sampleLength;
             this.random = random ?? throw new ArgumentNullException(nameof(random));
         }
 
         public int SaveEvery { get; set; } = 1000;
-        public int SampleEvery { get; set; } = 100;
-        public int SampleNum { get; set; } = 1;
 
         public void Train(string checkpoint, string run, CancellationToken cancellation) {
             new Session().UseSelf(session => {
@@ -61,14 +48,6 @@ namespace Gradient.Samples.GPT2 {
                     tf.nn.sparse_softmax_cross_entropy_with_logits_dyn(
                         labels: labels,
                         logits: logits));
-
-                var sample = Gpt2Sampler.SampleSequence(
-                    this.hParams,
-                    length: this.sampleLength,
-                    context: context,
-                    batchSize: this.batchSize,
-                    temperature: 1.0f,
-                    topK: 40);
 
                 var trainVars = tf.trainable_variables().Where((dynamic var) => var.name.Contains("model"));
                 var optimizer = new AdamOptimizer().minimize(loss, var_list: trainVars);
@@ -96,10 +75,9 @@ namespace Gradient.Samples.GPT2 {
                 var startTime = DateTime.Now;
 
                 while (!cancellation.IsCancellationRequested) {
+                    this.BeforeEpoch?.Invoke(counter, run, session, context);
                     if (counter % this.SaveEvery == 0)
                         Save(run, counter, session, saver);
-                    if (counter % this.SampleEvery == 0)
-                        GenerateSamples(session, sample, context, run, counter);
 
                     var batch = Enumerable.Range(0, this.batchSize)
                         .Select(_ => sampler.Sample(1024))
@@ -124,6 +102,9 @@ namespace Gradient.Samples.GPT2 {
             });
         }
 
+        public delegate void EpochHandler(int epoch, string run, Session session, dynamic context);
+        public event EpochHandler BeforeEpoch;
+
         static string GetCounterFileName(string run)
             => Path.Combine(Gpt2Checkpoints.CheckpointDir, run, "counter");
 
@@ -136,63 +117,6 @@ namespace Gradient.Samples.GPT2 {
                 Path.Combine(runCheckpointDir, "model"),
                 global_step: counter);
             File.WriteAllText(path: counterFile, contents: Invariant($"{counter}"));
-        }
-
-        void GenerateSamples(Session session, dynamic sample, dynamic context, string run, int counter) {
-            var contextTokens = np.array(new[] {this.sampleStartToken});
-            var allText = new List<string>();
-            int index = 0;
-            string text = null;
-            while (index < this.SampleNum) {
-                var @out = session.run(sample, feed_dict: new PythonDict<object, object> {[context] = Enumerable.Repeat(contextTokens, this.batchSize),});
-                foreach (int i in Enumerable.Range(0, Math.Min(this.SampleNum - index, this.batchSize))) {
-                    text = this.encoder.Decode(@out[i]);
-                    text = Invariant($"======== SAMPLE {index + 1} ========\n{text}\n");
-                    allText.Add(text);
-                    index++;
-                }
-            }
-
-            Debug.WriteLine(text);
-            string runSampleDir = Path.Combine(SampleDir, run);
-            Directory.CreateDirectory(runSampleDir);
-            File.WriteAllLines(path: Path.Combine(runSampleDir, Invariant($"samples-{counter}")), contents: allText);
-        }
-
-        class TrainingSampler {
-            readonly DataSet chunks;
-            readonly List<int> boundaries = new List<int> { 0 };
-            readonly Random random;
-            public int TokenCount { get; }
-
-            public TrainingSampler(DataSet chunks, Random random) {
-                this.random = random ?? throw new ArgumentNullException(nameof(random));
-                this.chunks = chunks ?? throw new ArgumentNullException(nameof(chunks));
-                this.TokenCount = chunks.Sum(chunk => chunk.shape.Item1);
-                if (this.TokenCount == 0)
-                    throw new ArgumentException("Dataset is empty", paramName: nameof(chunks));
-
-                foreach(var chunk in chunks)
-                    this.boundaries.Add(this.boundaries[this.boundaries.Count - 1] + chunk.shape.Item1);
-            }
-
-            public ndarray Sample(int length) {
-                if (length >= this.TokenCount / this.chunks.Count)
-                    throw new ArgumentException($"Dataset files are too small to sample {length} tokens at a time." +
-                        $"Maximum is {this.TokenCount/this.chunks.Count}.");
-
-                while (true) {
-                    int index = this.random.Next(this.TokenCount - length);
-                    int i = Algo.BinarySearch(j => this.boundaries[j] > index,
-                        lo: 0, hi: this.boundaries.Count - 1) - 1;
-
-                    if (this.boundaries[i+1] > index + length) {
-                        int withinChunk = index - this.boundaries[i];
-                        dynamic chunk = this.chunks[i];
-                        return chunk[new Range(withinChunk, withinChunk + length - 1)];
-                    }
-                }
-            }
         }
     }
 }

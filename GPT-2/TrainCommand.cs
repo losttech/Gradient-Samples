@@ -30,14 +30,16 @@
             var random = this.Seed == null ? new Random() : new Random(this.Seed.Value);
             var stop = new CancellationTokenSource();
             Console.CancelKeyPress += delegate { stop.Cancel(); };
-            new Gpt2Trainer<string>(dataset, encoder, sampleStartToken: encoder.EncodedEndOfText,
-                    hParams, this.BatchSize, this.SampleLength, random)
-                .Train(checkpoint, this.RunName, stop.Token);
+            var samplePrinter = new TrainingSamplePrinter(hParams, batchSize: this.BatchSize, encoder,
+                sampleStartToken: encoder.EncodedEndOfText, sampleLength: this.SampleLength);
+            var trainer = new Gpt2Trainer(dataset, hParams, this.BatchSize, random);
+            trainer.BeforeEpoch += samplePrinter.GenerateSamples;
+            trainer.Train(checkpoint, this.RunName, stop.Token);
 
             return 0;
         }
 
-        static DataSet LoadCsv(Gpt2Encoder encoder, string root, string field) {
+        static DataSet LoadCsv(IGpt2Encoder<string> encoder, string root, string field) {
             var result = new List<string>();
             foreach (string file in Directory
                     .EnumerateFiles(root, "*.csv", SearchOption.AllDirectories)) {
@@ -61,7 +63,7 @@
 
         const int TrimAfter = 16 * 1024 * 1024;
 
-        static DataSet Load(Gpt2Encoder encoder, IEnumerable<string> texts) {
+        static DataSet Load(IGpt2Encoder<string> encoder, IEnumerable<string> texts) {
             dynamic numpy = Py.Import("numpy");
             var result = new DataSet();
             string endOfText = Gpt2Encoder.EndOfTextPseudoToken;
