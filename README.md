@@ -1,7 +1,7 @@
 # Gradient-Samples
 Samples for [Gradient](https://losttech.software/gradient.html), TensorFlow binding for .NET
 
-[Billion Songs](https://github.com/losttech/BillionSongs) a repository with
+**[Billion Songs](https://github.com/losttech/BillionSongs)** a repository with
 deep learning-powered song lyrics generator in an ASP.NET Core web site.
 
 **BasicMath**- creates two constant tensors and performs simple algebraic operations on them
