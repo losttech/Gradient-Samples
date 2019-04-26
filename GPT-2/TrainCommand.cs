@@ -26,6 +26,10 @@
             var dataset = searchPattern.EndsWith("*.csv")
                 ? LoadCsv(encoder, root: datasetName, field: this.ColumnName)
                 : Gpt2Dataset.LoadDataset(encoder, path: datasetName, pattern: searchPattern);
+            if (dataset.Count == 0) {
+                Console.Error.WriteLine("The dataset is empty!");
+                return -1;
+            }
             var hParams = Gpt2Model.LoadHParams(this.ModelName);
             var random = this.Seed == null ? new Random() : new Random(this.Seed.Value);
             var stop = new CancellationTokenSource();

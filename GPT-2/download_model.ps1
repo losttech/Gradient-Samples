@@ -2,6 +2,7 @@
 
 mkdir -Force models/$name
 
+$ProgressPreference = 'SilentlyContinue'
 foreach ($filename in @("checkpoint","encoder.json","hparams.json",
 			"model.ckpt.data-00000-of-00001",
 			"model.ckpt.index","model.ckpt.meta","vocab.bpe"))
