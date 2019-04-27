@@ -73,7 +73,7 @@
         static DataSet Load(Gpt2Encoder encoder, IEnumerable<string> texts) {
             dynamic numpy = Py.Import("numpy");
             var result = new DataSet();
-            string endOfText = Gpt2Encoder.EndOfTextPseudoToken;
+            string encodedEndOfText = encoder.EncodedEndOfText;
             var chunk = new List<string>();
             int chunkSize = 0;
             void AddChunk() {
@@ -86,13 +86,13 @@
                 if (string.IsNullOrWhiteSpace(text))
                     continue;
 
-                if (chunkSize + text.Length + endOfText.Length >= TrimAfter) {
+                if (chunkSize + text.Length + encodedEndOfText.Length >= TrimAfter) {
                     AddChunk();
                 } else {
-                    chunkSize += text.Length + endOfText.Length;
+                    chunkSize += text.Length + encodedEndOfText.Length;
                     var encoded = encoder.Encode(text);
                     chunk.AddRange(encoded);
-                    chunk.Add(endOfText);
+                    chunk.Add(encodedEndOfText);
                 }
             }
             if (chunk.Count > 0)
