@@ -76,12 +76,12 @@ namespace Gradient.Samples.GPT2 {
 
                 session.run(tf.global_variables_initializer());
 
-                Debug.WriteLine("Loading checkpoint " + checkpoint);
+                Console.WriteLine("Loading checkpoint " + checkpoint);
                 saver.restore(session, checkpoint);
 
-                Debug.WriteLine("Loading dataset...");
+                Console.WriteLine("Loading dataset...");
                 var sampler = new TrainingSampler(this.dataset, this.random);
-                Debug.WriteLine($"Dataset has {sampler.TokenCount} tokens");
+                Console.WriteLine($"Dataset has {sampler.TokenCount} tokens");
 
                 string counterFile = Path.Combine(Gpt2Checkpoints.CheckpointDir, run, "counter");
                 if (counter == null && File.Exists(counterFile))
@@ -93,7 +93,7 @@ namespace Gradient.Samples.GPT2 {
 
                 void Save() {
                     Directory.CreateDirectory(runCheckpointDir);
-                    Debug.WriteLine("Saving " + Path.Combine(runCheckpointDir, Invariant($"model-{counter}")));
+                    Console.WriteLine("Saving " + Path.Combine(runCheckpointDir, Invariant($"model-{counter}")));
                     saver.save(session,
                         Path.Combine(runCheckpointDir, "model"),
                         global_step: counter.Value);
@@ -116,7 +116,7 @@ namespace Gradient.Samples.GPT2 {
                             index++;
                         }
                     }
-                    Debug.WriteLine(text);
+                    Console.WriteLine(text);
                     Directory.CreateDirectory(runSampleDir);
                     File.WriteAllLines(
                         path: Path.Combine(runSampleDir, Invariant($"samples-{counter}")),
@@ -145,12 +145,12 @@ namespace Gradient.Samples.GPT2 {
 
                     avgLoss = (avgLoss.Item1 * 0.99 + lv, avgLoss.Item2 * 0.99 + 1);
 
-                    Debug.WriteLine($"[{counter} | {DateTime.Now-startTime}] loss={lv} avg={avgLoss.Item1/avgLoss.Item2}");
+                    Console.WriteLine($"[{counter} | {DateTime.Now-startTime}] loss={lv} avg={avgLoss.Item1/avgLoss.Item2}");
 
                     counter++;
                 }
 
-                Debug.WriteLine("Interrupted");
+                Console.WriteLine("Interrupted");
                 Save();
             });
         }

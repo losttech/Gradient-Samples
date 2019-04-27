@@ -18,21 +18,23 @@
         /// Interactively run the model
         /// </summary>
         /// <param name="modelName">Which model to use</param>
+        /// <param name="checkpoint">Which checkpoint to load</param>
         /// <param name="seed">Seed for random number generators, fix seed to reproduce results</param>
         /// <param name="sampleCount">Number of samples to return total</param>
         /// <param name="batchSize">Number of batches (only affects speed/memory).  Must divide sampleCount.</param>
         /// <param name="length">Number of tokens in generated text, if null (default), is
-        /// determined by model hyperparameters</param>
+        ///     determined by model hyperparameters</param>
         /// <param name="temperature">randomness in boltzmann distribution.
-        /// Lower temperature results in less random completions. As the 
-        /// temperature approaches zero, the model will become deterministic and
-        /// repetitive. Higher temperature results in more random completions.</param>
+        ///     Lower temperature results in less random completions. As the 
+        ///     temperature approaches zero, the model will become deterministic and
+        ///     repetitive. Higher temperature results in more random completions.</param>
         /// <param name="topK">Controls diversity. 1 means only 1 word is
-        /// considered for each step (token), resulting in deterministic completions,
-        /// while 40 means 40 words are considered at each step. 0 (default) is a
-        /// special setting meaning no restrictions. 40 generally is a good value.
+        ///     considered for each step (token), resulting in deterministic completions,
+        ///     while 40 means 40 words are considered at each step. 0 (default) is a
+        ///     special setting meaning no restrictions. 40 generally is a good value.
         /// </param>
-        public static void Run(string modelName = "117M", int? seed = null, int sampleCount = 1,
+        public static void Run(string modelName = "117M", string checkpoint = null, int? seed = null,
+            int sampleCount = 1,
             int batchSize = 1, int? length = null, float temperature = 1, int topK = 0) {
             if (sampleCount % batchSize != 0)
                 throw new ArgumentException();
@@ -59,7 +61,7 @@
                     topK: topK);
 
                 var saver = new Saver();
-                var checkpoint = tf.train.latest_checkpoint(Path.Combine("models", modelName));
+                checkpoint = checkpoint ?? tf.train.latest_checkpoint(Path.Combine("models", modelName));
                 saver.restore(sess, checkpoint);
 
                 while (true) {
@@ -107,6 +109,10 @@
                 (float t) => this.Temperature = t);
             this.HasOption("k|top-k=", "Number of words to consider for each step",
                 (int k) => this.TopK = k);
+            this.HasOption("r|run=", "For tuned models, which run to use",
+                run => this.RunName = run);
+            this.HasOption("checkpoint=", "Which run checkpoint to use (default: latest)",
+                checkpoint => this.Checkpoint = checkpoint);
         }
 
         public string ModelName { get; set; } = "117M";
@@ -116,9 +122,18 @@
         public int? Length { get; set; }
         public float Temperature { get; set; } = 1;
         public int TopK { get; set; }
+        public string RunName { get; set; }
+        public string Checkpoint { get; set; } = "latest";
 
         public override int Run(string[] remainingArguments) {
+            string checkpoint = Gpt2Checkpoints.ProcessCheckpointConfig(
+                gpt2Root: Environment.CurrentDirectory,
+                checkpoint: this.Checkpoint,
+                modelName: this.ModelName,
+                runName: this.RunName);
+
             Run(modelName: this.ModelName,
+                checkpoint: checkpoint,
                 seed: this.Seed,
                 sampleCount: this.SampleCount,
                 batchSize: this.BatchSize,

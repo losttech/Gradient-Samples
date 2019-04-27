@@ -105,7 +105,7 @@
         public int BatchSize { get; set; } = 1;
         public int SampleLength { get; set; } = 1024;
         public int SampleNum { get; set; } = 1;
-        public int SampleEvery { get; set; } = 100;
+        public int SampleEvery { get; set; } = 1000;
         public int SaveEvery { get; set; } = 1000;
         public string RunName { get; set; } = DateTime.Now.ToString("s").Replace(':', '-');
         public string Checkpoint { get; set; } = "latest";
