@@ -62,6 +62,8 @@
                 var checkpoint = tf.train.latest_checkpoint(Path.Combine("models", modelName));
                 saver.restore(sess, checkpoint);
 
+                sess.run(tf.global_variables_initializer());
+
                 while (true) {
                     string text;
                     do {
