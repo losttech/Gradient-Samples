@@ -47,7 +47,7 @@ namespace Gradient.Samples.GPT2 {
         public int SampleEvery { get; set; } = 100;
         public int SampleNum { get; set; } = 1;
 
-        public void Train(string checkpoint, string run, CancellationToken cancellation) {
+        public void Train(string checkpoint, string run, int? counter, CancellationToken cancellation) {
             new Session().UseSelf(session => {
                 var context = tf.placeholder(tf.int32, new int?[] { this.batchSize, null }.Cast<object>());
                 var output = Gpt2Model.Model(this.hParams, input: context);
@@ -67,7 +67,7 @@ namespace Gradient.Samples.GPT2 {
                     topK: 40);
 
                 var trainVars = tf.trainable_variables().Where((dynamic var) => var.name.Contains("model"));
-                var optimizer = new AdamOptimizer().minimize(loss, var_list: trainVars);
+                var optimizer = new AdamOptimizer(learning_rate: 0.0002).minimize(loss, var_list: trainVars);
 
                 var saver = new Saver(
                     var_list: trainVars,
@@ -83,10 +83,10 @@ namespace Gradient.Samples.GPT2 {
                 var sampler = new TrainingSampler(this.dataset, this.random);
                 Debug.WriteLine($"Dataset has {sampler.TokenCount} tokens");
 
-                int counter = 1;
                 string counterFile = Path.Combine(Gpt2Checkpoints.CheckpointDir, run, "counter");
-                if (File.Exists(counterFile))
+                if (counter == null && File.Exists(counterFile))
                     counter = int.Parse(File.ReadAllText(counterFile), CultureInfo.InvariantCulture) + 1;
+                counter = counter ?? 1;
 
                 string runCheckpointDir = Path.Combine(Gpt2Checkpoints.CheckpointDir, run);
                 string runSampleDir = Path.Combine(SampleDir, run);
@@ -96,7 +96,7 @@ namespace Gradient.Samples.GPT2 {
                     Debug.WriteLine("Saving " + Path.Combine(runCheckpointDir, Invariant($"model-{counter}")));
                     saver.save(session,
                         Path.Combine(runCheckpointDir, "model"),
-                        global_step: counter);
+                        global_step: counter.Value);
                     File.WriteAllText(path: counterFile, contents: Invariant($"{counter}"));
                 }
 

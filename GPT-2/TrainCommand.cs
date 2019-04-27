@@ -34,8 +34,14 @@
             var random = this.Seed == null ? new Random() : new Random(this.Seed.Value);
             var stop = new CancellationTokenSource();
             Console.CancelKeyPress += delegate { stop.Cancel(); };
-            new Gpt2Trainer(dataset, encoder, hParams, this.BatchSize, this.SampleLength, random)
-                .Train(checkpoint, this.RunName, stop.Token);
+            new Gpt2Trainer(dataset, encoder, hParams, this.BatchSize, this.SampleLength, random) {
+                SaveEvery = this.SaveEvery,
+                SampleNum = this.SampleNum,
+                SampleEvery = this.SampleEvery,
+            }
+                .Train(checkpoint, this.RunName,
+                    counter: checkpoint == "fresh" ? 1 : (int?)null,
+                    cancellation: stop.Token);
 
             return 0;
         }
