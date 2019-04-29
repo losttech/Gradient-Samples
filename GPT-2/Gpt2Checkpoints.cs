@@ -8,11 +8,11 @@
         public const string CheckpointDir = "checkpoint";
 
         public static string GetLatestCheckpoint(string gpt2Root, string modelName, string run)
-            => tf.train.latest_checkpoint(Path.Combine(gpt2Root, CheckpointDir, run))
+            => tf.train.latest_checkpoint(Path.GetFullPath(Path.Combine(gpt2Root, CheckpointDir, run)))
                ?? GetOriginalCheckpoint(gpt2Root, modelName);
 
         public static string GetOriginalCheckpoint(string gpt2Root, string modelName)
-            => tf.train.latest_checkpoint(Path.Combine(gpt2Root, "models", modelName));
+            => tf.train.latest_checkpoint(Path.GetFullPath(Path.Combine(gpt2Root, "models", modelName)));
 
         public static string ProcessCheckpointConfig(string gpt2Root, string checkpoint,
             string modelName, string runName) {
