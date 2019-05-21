@@ -21,11 +21,11 @@ let main argv =
     // Loosing static typing here, because
     // F# does not do perform covariant coversions automatically :(
     // This should be fixed later when types in ops will become well-specified
-    let a = tf.constant(5.0, name="a") |> Seq.singleton<obj>
-    let b = tf.constant(10.0, name="b") |> Seq.singleton<obj>
+    let a = tf.constant(5.0, name="a")
+    let b = tf.constant(10.0, name="b")
 
     let sum = tf.add(a, b, name="sum")
-    let div = tf.div(a, b, name="div") |> Seq.singleton<obj>
+    let div = tf.div(a, b, name="div")
 
     let config = !? config_pb2.ConfigProto ()
     config?gpu_options?allow_growth <- true
@@ -34,7 +34,7 @@ let main argv =
         let writer = FileWriter(".",  sess.graph :?> Graph |> implicit)
         printfn "a = %O" (sess.run a)
         printfn "b = %O" (sess.run b)
-        printfn "a + b = %O" (sess?run(sum))
+        printfn "a + b = %O" (sess.run sum)
         printfn "a / b = %O" (sess.run div)
         
         writer.close()
