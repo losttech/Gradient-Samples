@@ -67,12 +67,11 @@
             if (this.batchCount == 0)
                 throw new ArgumentException();
 
-            // TODO implement and use C# 8 indexing here
-            this.tensor = this.tensor[..this.batchCount * this.batchSize * this.seqLength];
+            this.tensor = this.tensor[..this.batchCount * this.batchSize * this.seqLength-1];
             _ArrayLike xdata = this.tensor;
             _ArrayLike ydata = np.copy(this.tensor);
             ydata[..^1] = xdata[1..];
-            ydata[^1] = xdata[0];
+            ydata[^0] = xdata[0];
             this.x_batches = np.split((ndarray)xdata.reshape((this.batchSize, -1)), this.batchCount, 1);
             this.y_batches = np.split((ndarray)ydata.reshape((this.batchSize, -1)), this.batchCount, 1);
         }
