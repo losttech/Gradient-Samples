@@ -3,6 +3,7 @@
     using System;
     using System.Collections.Generic;
     using System.Linq;
+    using Gradient.ManualWrappers;
     using numpy;
     using tensorflow;
     using tensorflow.contrib.training;
@@ -89,8 +90,12 @@
                     new TensorShape(batchSize),
                     new TensorShape((int?)batchSize, (int?)null),
                 };
-                result = tf.while_loop(cond: PythonFunctionContainer.Of<object, object, object, bool>(True),
+                result = tf.while_loop(
+                    cond: PythonFunctionContainer.Of<object, object, object, bool>(True),
                     body: PythonFunctionContainer.Of(new Func<object, object, object, Tensor[]>(Body)),
+                    parallel_iterations: 10,
+                    swap_memory: false,
+                    name: null,
                     maximum_iterations: tf.constant(length),
                     loop_vars: loopVars,
                     shape_invariants: shapeInvariants,

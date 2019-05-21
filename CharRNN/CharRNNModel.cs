@@ -73,7 +73,10 @@
                 var prevSymbol = tf.stop_gradient(tf.argmax(prev, 1));
                 return tf.nn.embedding_lookup(embedding, prevSymbol);
             }
-            var decoder = tensorflow.contrib.legacy_seq2seq.legacy_seq2seq.rnn_decoder(inputs, initialState.Items().Cast<object>(), this.rnn,
+            var decoder = tensorflow.contrib.legacy_seq2seq.legacy_seq2seq.rnn_decoder_dyn(
+                decoder_inputs: inputs,
+                initial_state: this.initialState.Items(),
+                cell: this.rnn,
                 loop_function: training ? null : PythonFunctionContainer.Of(new Func<dynamic, dynamic, dynamic>(Loop)), scope: "rnnlm");
             var outputs = decoder.Item1;
             var lastState = (seq2seqState)decoder.Item2;
@@ -82,10 +85,10 @@
 
             this.logits = tf.matmul(output, softmax_W) + softmax_b;
             this.probs = tf.nn.softmax(new[] { this.logits });
-            this.loss = tensorflow.contrib.legacy_seq2seq.legacy_seq2seq.sequence_loss_by_example(
-                new[] { this.logits },
-                new[] { tf.reshape(targets, new[] { -1 }) },
-                new[] { tf.ones(new[] { parameters.BatchSize * parameters.SeqLength }) });
+            this.loss = tensorflow.contrib.legacy_seq2seq.legacy_seq2seq.sequence_loss_by_example_dyn(
+                logits: new[] { this.logits },
+                targets: new[] { tf.reshape(this.targets, new[] { -1 }) },
+                weights: new[] { tf.ones(new[] { parameters.BatchSize * parameters.SeqLength }) });
 
             Tensor cost = null;
             new name_scope("cost").UseSelf(_ => {
@@ -170,7 +173,7 @@
         }
 
         static readonly SortedDictionary<ModelType, Func<int, RNNCell>> ModelTypeToCellFunction = new SortedDictionary<ModelType, Func<int, RNNCell>> {
-            [ModelType.RNN] = i => new RNNCell(i),
+            [ModelType.RNN] = i => RNNCell.NewDyn(i),
             [ModelType.GRU] = i => new GRUCell(i),
             [ModelType.LSTM] = i => new LSTMCell(i),
             [ModelType.NAS] = i => new NASCell(i),

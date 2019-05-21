@@ -7,7 +7,9 @@
     {
         static int Main(string[] args)
         {
+            Console.Title = "GPT-2";
             GradientSetup.OptInToUsageDataCollection();
+            GradientSetup.UseEnvironmentFromVariable();
             // force Gradient initialization
             tensorflow.tf.no_op();
 

@@ -25,9 +25,10 @@
 
         static int Main(string[] args) {
             GradientLog.OutputWriter = Console.Out;
+            GradientSetup.UseEnvironmentFromVariable();
 
-            tf.no_op();
-
+            // required before using PythonEngine
+            GradientSetup.EnsureInitialized();
             np = PythonEngine.ImportModule("numpy");
             return ConsoleCommandDispatcher.DispatchCommand(
                ConsoleCommandDispatcher.FindCommandsInSameAssemblyAs(typeof(LinearSvmProgram)),
@@ -54,8 +55,8 @@
             var testIn = numpy.np.array(((IEnumerable)input).Cast<dynamic>().Skip(trainCount));
             var testOut = numpy.np.array(expectedOutput.Skip(trainCount));
 
-            var inPlace = tf.placeholder(shape: new int?[] { null, input.shape[1] }.Cast<object>(), dtype: tf.float32);
-            var outPlace = tf.placeholder(shape: new int?[] { null, 1 }.Cast<object>(), dtype: tf.float32);
+            var inPlace = tf.placeholder(shape: new TensorShape(null, input.shape[1]), dtype: tf.float32);
+            var outPlace = tf.placeholder(shape: new TensorShape(null, 1), dtype: tf.float32);
             var w = new Variable(tf.random_normal(shape: new TensorShape((int)input.shape[1], 1)));
             var b = new Variable(tf.random_normal(shape: new TensorShape(1, 1)));
 

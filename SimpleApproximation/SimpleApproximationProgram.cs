@@ -14,6 +14,7 @@
 
         static void Main() {
             GradientLog.OutputWriter = Console.Out;
+            GradientSetup.UseEnvironmentFromVariable();
 
             var input = tf.placeholder(tf.float32, new TensorShape(null, 1), name: "x");
             var output = tf.placeholder(tf.float32, new TensorShape(null, 1), name: "y");

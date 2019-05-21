@@ -11,6 +11,7 @@
     static class FashionMnistClassification {
         static void Main() {
             GradientLog.OutputWriter = Console.Out;
+            GradientSetup.UseEnvironmentFromVariable();
 
             // requires Internet connection
             (dynamic train, dynamic test) = tf.keras.datasets.fashion_mnist.load_data();
@@ -33,7 +34,7 @@
             model.compile(
                 optimizer: new AdamOptimizer(),
                 loss: "sparse_categorical_crossentropy",
-                metrics: new dynamic[] {"accuracy"}.ToPythonList());
+                metrics: new dynamic[] {"accuracy"});
 
             model.fit(trainImages, trainLabels, epochs: 5);
 

@@ -8,6 +8,7 @@
     static class BasicMathProgram {
         static void Main() {
             GradientLog.OutputWriter = Console.Out;
+            GradientSetup.UseEnvironmentFromVariable();
 
             var a = new [] { tf.constant(5.0, name: "a") };
             var b = new [] { tf.constant(10.0, name: "b") };

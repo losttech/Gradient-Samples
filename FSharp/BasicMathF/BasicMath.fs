@@ -4,6 +4,7 @@ open System
 open Gradient
 open tensorflow
 open tensorflow.summary
+open tensorflow.core.protobuf.config_pb2
 
 let inline (!>) (x:^a) : ^b = ((^a or ^b) : (static member op_Implicit : ^a -> ^b) x)
 // F# does not use implicit conversions, when resolving an overload
@@ -13,6 +14,7 @@ let inline implicit (x:^a): SharPy.Runtime.ImplicitContainer< ^a > = !> x
 [<EntryPoint>]
 let main argv =
     GradientSetup.OptInToUsageDataCollection()
+    GradientSetup.UseEnvironmentFromVariable() |> ignore
 
     GradientLog.OutputWriter <- Console.Out
 
@@ -25,7 +27,10 @@ let main argv =
     let sum = tf.add(a, b, name="sum")
     let div = tf.div(a, b, name="div") |> Seq.singleton<obj>
 
-    Session().UseSelf(fun sess ->
+    let config = !? config_pb2.ConfigProto ()
+    config?gpu_options?allow_growth <- true
+
+    Session.NewDyn(config=config).UseSelf(fun sess ->
         let writer = FileWriter(".",  sess.graph :?> Graph |> implicit)
         printfn "a = %O" (sess.run a)
         printfn "b = %O" (sess.run b)

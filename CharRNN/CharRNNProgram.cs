@@ -18,6 +18,7 @@
 
         static int Main(string[] args) {
             GradientLog.OutputWriter = Console.Out;
+            GradientSetup.UseEnvironmentFromVariable();
 
             // ported from https://github.com/sherjilozair/char-rnn-tensorflow
             return Parser.Default.ParseArguments<CharRNNTrainingParameters, CharRNNSamplingParameters>(args)
