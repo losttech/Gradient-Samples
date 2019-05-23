@@ -23,7 +23,11 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "LinearSVM", "LinearSVM\Line
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "FSharp", "FSharp", "{B18FC4F9-E13F-437F-A8DB-4783E9C0F356}"
 EndProject
-Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "BasicMathF", "FSharp\BasicMathF\BasicMathF.fsproj", "{CEF0739E-BD49-466E-9F8D-226C9C474DB4}"
+Project("{6EC3EE1D-3C4E-46DD-8F32-0CC8E7565705}") = "BasicMathF", "FSharp\BasicMathF\BasicMathF.fsproj", "{CEF0739E-BD49-466E-9F8D-226C9C474DB4}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "VB", "VB", "{875975E4-796F-4181-BACE-7DC71CE35D1F}"
+EndProject
+Project("{F184B08F-C81C-45F6-A57F-5ABD9991F28F}") = "BasicMathVB", "VB\BasicMathVB\BasicMathVB.vbproj", "{453E1365-83C2-46B6-B8E0-728B778CA1A7}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -59,12 +63,17 @@ Global
 		{CEF0739E-BD49-466E-9F8D-226C9C474DB4}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{CEF0739E-BD49-466E-9F8D-226C9C474DB4}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{CEF0739E-BD49-466E-9F8D-226C9C474DB4}.Release|Any CPU.Build.0 = Release|Any CPU
+		{453E1365-83C2-46B6-B8E0-728B778CA1A7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{453E1365-83C2-46B6-B8E0-728B778CA1A7}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{453E1365-83C2-46B6-B8E0-728B778CA1A7}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{453E1365-83C2-46B6-B8E0-728B778CA1A7}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{CEF0739E-BD49-466E-9F8D-226C9C474DB4} = {B18FC4F9-E13F-437F-A8DB-4783E9C0F356}
+		{453E1365-83C2-46B6-B8E0-728B778CA1A7} = {875975E4-796F-4181-BACE-7DC71CE35D1F}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {052B6168-274F-43B0-B3F0-24F5C5D4BE58}
