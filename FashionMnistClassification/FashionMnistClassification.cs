@@ -16,9 +16,9 @@
             // requires Internet connection
             (dynamic train, dynamic test) = tf.keras.datasets.fashion_mnist.load_data();
             // will be able to do (trainImages, trainLabels) = train;
-            ndarray trainImages = train.Item1;
+            ndarray trainImages = train.Item1 / 255.0f;
             ndarray trainLabels = train.Item2;
-            ndarray testImages = test.Item1;
+            ndarray testImages = test.Item1 / 255.0f;
             ndarray testLabels = test.Item2;
 
             bool loaded = 60000 == trainImages.Length;
