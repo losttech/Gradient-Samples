@@ -47,8 +47,11 @@ namespace Gradient.Samples.GPT2 {
         public int SampleEvery { get; set; } = 100;
         public int SampleNum { get; set; } = 1;
 
-        public void Train(string checkpoint, string run, int? counter, CancellationToken cancellation) {
-            new Session().UseSelf(session => {
+        public void Train(string checkpoint, string run, int? counter, dynamic sessionConfig = null, CancellationToken cancellation = default) {
+            Session sess = sessionConfig == null
+                ? Session.NewDyn(config: sessionConfig)
+                : new Session();
+            sess.UseSelf(session => {
                 var context = tf.placeholder(tf.int32, new TensorShape(this.batchSize, null));
                 var output = Gpt2Model.Model(this.hParams, input: context);
                 Tensor labels = context[Range.All, Range.StartAt(1)];
