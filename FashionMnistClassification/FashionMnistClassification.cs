@@ -10,6 +10,7 @@
 
     static class FashionMnistClassification {
         static void Main() {
+            Console.Title = nameof(FashionMnistClassification);
             GradientLog.OutputWriter = Console.Out;
             GradientSetup.UseEnvironmentFromVariable();
 
@@ -27,7 +28,7 @@
             var model = new Sequential(new Layer[] {
                 // will be able to do: new Flatten(kwargs: new { input_shape = (28, 28) }),
                 new Flatten(kwargs: new PythonDict<string, object> { ["input_shape"] = (28, 28) }),
-                new Dense(units: 128, activation: tf.nn.relu_fn),
+                new Dense(units: 128, activation: tf.nn.selu_fn),
                 new Dense(units: 10, activation: tf.nn.softmax_fn),
             });
 
