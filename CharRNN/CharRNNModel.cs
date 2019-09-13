@@ -16,7 +16,7 @@
         readonly Random random = new Random();
         readonly CharRNNModelParameters parameters;
         readonly Func<int, RNNCell> cellFactory;
-        readonly PythonList<RNNCell> cells = new PythonList<RNNCell>();
+        readonly List<RNNCell> cells = new List<RNNCell>();
         readonly RNNCell rnn;
         internal readonly dynamic inputData;
         internal readonly seq2seqState initialState;
@@ -65,8 +65,8 @@
             if (training && parameters.KeepOutputProbability < 1)
                 input = tf.nn.dropout(input, parameters.KeepOutputProbability);
 
-            PythonList<Tensor> inputs = tf.split(input, parameters.SeqLength, axis: 1);
-            inputs = inputs.Select(i => (Tensor)tf.squeeze(i, axis: 1)).ToPythonList();
+            IList<Tensor> inputs = tf.split(input, parameters.SeqLength, axis: 1);
+            inputs = inputs.Select(i => (Tensor)tf.squeeze(i, axis: 1)).ToList();
 
             dynamic Loop(dynamic prev, dynamic _) {
                 prev = tf.matmul(prev, softmax_W) + softmax_b;
@@ -78,7 +78,7 @@
                 initial_state: this.initialState.Items(),
                 cell: this.rnn,
                 loop_function: training ? null : PythonFunctionContainer.Of(new Func<dynamic, dynamic, dynamic>(Loop)), scope: "rnnlm");
-            var outputs = decoder.Item1;
+            IList<Tensor> outputs = decoder.Item1;
             var lastState = (seq2seqState)decoder.Item2;
             dynamic contatenatedOutputs = tf.concat(outputs, 1);
             var output = tensorflow.tf.reshape(contatenatedOutputs, new[] { -1, parameters.RNNSize });

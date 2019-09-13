@@ -140,7 +140,7 @@ namespace Gradient.Samples.GPT2 {
                         .ToArray();
 
                     var placeholderValues = new PythonDict<object, object> {
-                        [context] = batch.ToPythonList(),
+                        [context] = batch,
                     };
                     var tuple = session.run_dyn((optimizer, loss), feed_dict: placeholderValues);
 

@@ -1,4 +1,4 @@
-﻿namespace BasicMath {
+﻿namespace Gradient.Samples {
     using System;
     using Gradient;
     using tensorflow;

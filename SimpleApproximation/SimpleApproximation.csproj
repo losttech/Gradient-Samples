@@ -4,10 +4,12 @@
     <OutputType>Exe</OutputType>
     <TargetFramework>netcoreapp2.0</TargetFramework>
     <LangVersion>latest</LangVersion>
+    <AssemblyName>SimpleApproximation</AssemblyName>
+    <RootNamespace>Gradient.Samples</RootNamespace>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Gradient" Version="0.1.10-tech-preview5.1.1" />
+    <PackageReference Include="Gradient" Version="0.1.10-tech-preview6" />
   </ItemGroup>
 
 </Project>

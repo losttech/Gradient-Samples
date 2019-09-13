@@ -1,4 +1,4 @@
-﻿namespace Gradient.Examples {
+﻿namespace Gradient.Samples {
     using System;
     using System.Diagnostics;
     using numpy;

@@ -2,12 +2,12 @@
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <RootNamespace>FashionMnistVB</RootNamespace>
+    <RootNamespace>Gradient.Samples</RootNamespace>
     <TargetFramework>netcoreapp2.2</TargetFramework>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Gradient" Version="0.1.10-tech-preview5.1.1" />
+    <PackageReference Include="Gradient" Version="0.1.10-tech-preview6" />
   </ItemGroup>
 
 </Project>

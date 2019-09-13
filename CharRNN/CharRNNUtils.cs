@@ -67,7 +67,7 @@
             if (this.batchCount == 0)
                 throw new ArgumentException();
 
-            this.tensor = this.tensor[..this.batchCount * this.batchSize * this.seqLength-1];
+            this.tensor = this.tensor[..(this.batchCount * this.batchSize * this.seqLength-1)];
             _ArrayLike xdata = this.tensor;
             _ArrayLike ydata = np.copy(this.tensor);
             ydata[..^1] = xdata[1..];

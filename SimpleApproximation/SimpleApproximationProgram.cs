@@ -1,4 +1,4 @@
-﻿namespace Gradient.Examples.SimpleApproximation {
+﻿namespace Gradient.Samples {
     using System;
     using System.Linq;
     using SharPy.Runtime;
