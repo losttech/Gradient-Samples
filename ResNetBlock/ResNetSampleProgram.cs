@@ -10,14 +10,6 @@
 
     static class ResNetSampleProgram {
         public static void Run() {
-            var block = new ResNetBlock(kernelSize: 1, filters: new[] { 1, 2, 3 });
-            var applicationResult = block.call(tf.zeros(new TensorShape(1, 2, 3, 3)));
-            Console.WriteLine(applicationResult);
-
-            foreach (dynamic variable in block.trainable_variables) {
-                Console.WriteLine(variable.name);
-            }
-
             // requires Internet connection
             (dynamic train, dynamic test) = tf.keras.datasets.fashion_mnist.load_data();
             // will be able to do (trainImages, trainLabels) = train;
@@ -31,9 +23,9 @@
 
             var model = new Sequential(new Layer[] {
                 // will be able to do: new Flatten(kwargs: new { input_shape = (28, 28) }),
-                new Flatten(kwargs: new PythonDict<string, object> { ["input_shape"] = (28, 28) }),
                 new ResNetBlock(kernelSize: 3, filters: new [] { 1, 2, 3 }),
                 new ResNetBlock(kernelSize: 3, filters: new [] { 1, 2, 3 }),
+                new Flatten(),
                 new Dense(units: 10, activation: tf.nn.softmax_fn),
             });
 

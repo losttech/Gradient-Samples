@@ -1,5 +1,6 @@
 ﻿namespace Gradient.Samples {
     using System.Collections.Generic;
+    using System.Linq;
     using Gradient.ManualWrappers;
     using SharPy.Runtime;
     using tensorflow;
@@ -19,6 +20,10 @@
             }
         }
 
+        public override dynamic call(IEnumerable<IGraphNodeBase> inputs, ImplicitContainer<IGraphNodeBase> training, IGraphNodeBase mask) {
+            return this.callImpl((Tensor)inputs.Single(), training);
+        }
+
         public override object call(object inputs, bool training, IGraphNodeBase mask = null) {
             return this.callImpl((Tensor)inputs, training);
         }
@@ -27,8 +32,8 @@
             return this.callImpl((Tensor)inputs, training?.Value);
         }
 
-        object callImpl(Tensor inputs, dynamic training) {
-            Tensor result = inputs;
+        object callImpl(IGraphNodeBase inputs, dynamic training) {
+            IGraphNodeBase result = inputs;
 
             var batchNormExtraArgs = new PythonDict<string, object>();
             if (training != null)
@@ -41,7 +46,7 @@
                     result = tf.nn.relu(result);
             }
 
-            result += inputs;
+            result += (Tensor)result + inputs;
 
             return tf.nn.relu(result);
         }
