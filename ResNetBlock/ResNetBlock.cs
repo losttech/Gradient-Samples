@@ -1,4 +1,7 @@
 ﻿namespace Gradient.Samples {
+    using System.Collections.Generic;
+    using Gradient.ManualWrappers;
+    using SharPy.Runtime;
     using tensorflow;
     using tensorflow.keras;
     using tensorflow.keras.layers;
@@ -12,15 +15,28 @@
                 this.convs[part] = part == 1
                     ? Conv2D.NewDyn(filters[part], kernel_size: kernelSize, padding: "same")
                     : Conv2D.NewDyn(filters[part], kernel_size: (1, 1));
+                this.batchNorms[part] = new BatchNormalization();
             }
         }
 
-        public override object call(object inputs, bool training, object mask = null) {
-            dynamic result = inputs;
+        public override object call(object inputs, bool training, IGraphNodeBase mask = null) {
+            return this.callImpl((Tensor)inputs, training);
+        }
 
-            for(int part = 0; part < this.convs.Length; part++) {
-                result = this.convs[part].call(result);
-                result = this.batchNorms[part].call(result);
+        public override dynamic call(object inputs, ImplicitContainer<IGraphNodeBase> training = null, IEnumerable<IGraphNodeBase> mask = null) {
+            return this.callImpl((Tensor)inputs, training?.Value);
+        }
+
+        object callImpl(Tensor inputs, dynamic training) {
+            Tensor result = inputs;
+
+            var batchNormExtraArgs = new PythonDict<string, object>();
+            if (training != null)
+                batchNormExtraArgs["training"] = training;
+
+            for (int part = 0; part < this.convs.Length; part++) {
+                result = this.convs[part].__call__(result);
+                result = this.batchNorms[part].__call__(result, kwargs: batchNormExtraArgs);
                 if (part + 1 != this.convs.Length)
                     result = tf.nn.relu(result);
             }
