@@ -7,6 +7,7 @@
     using numpy;
     using tensorflow;
     using tensorflow.contrib.training;
+    using tensorflow.python.framework.dtypes;
     using tensorflow.python.ops.variable_scope;
 
     public static class Gpt2Sampler
@@ -67,7 +68,7 @@
                 Tensor[] Body(object past, dynamic prev, object output)
                 {
                     var nextOutputs = Step(hParams, prev[Range.All, tf.newaxis], past: past);
-                    Tensor logits = nextOutputs["logits"][Range.All, -1, Range.All] / tf.to_float(temperature);
+                    Tensor logits = nextOutputs["logits"][Range.All, -1, Range.All] / tf.constant(temperature, dtypes.float32_ref);
                     logits = TopLogits(logits, topK: topK);
                     var samples = tf.multinomial_dyn(logits, num_samples: 1, output_dtype: tf.int32);
                     return new Tensor[]

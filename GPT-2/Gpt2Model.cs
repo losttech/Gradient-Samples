@@ -39,7 +39,7 @@
         }
 
         static Tensor GeLU(Tensor input) =>
-            ((dynamic)input * 0.5) * (tf.tanh_dyn((input + tf.pow(input, 3) * 0.044715) * Math.Sqrt(2 / Math.PI)) + 1);
+            ((dynamic)input * 0.5) * (tf.tanh((input + tf.pow(input, 3) * 0.044715) * Math.Sqrt(2 / Math.PI)) + 1);
 
         /// <summary>
         /// Normalize to mean = 0, std = 1, then do a diagonal affine transform.

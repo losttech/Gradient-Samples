@@ -109,7 +109,7 @@
         dynamic Loss(dynamic W, dynamic b, dynamic inputData, dynamic targetData) {
             var logits = tf.subtract(tf.matmul(inputData, W), b);
             var normTerm = tf.divide(tf.reduce_sum(tf.multiply(tf.transpose(W), W)), 2);
-            var classificationLoss = tf.reduce_mean(tf.maximum(0.0, tf.subtract(this.flags.Delta, tf.multiply(logits, targetData))));
+            var classificationLoss = tf.reduce_mean(tf.maximum(tf.constant(0.0), tf.subtract(this.flags.Delta, tf.multiply(logits, targetData))));
             var totalLoss = tf.add_dyn(tf.multiply(this.flags.C, classificationLoss), tf.multiply(this.flags.Reg, normTerm));
             return totalLoss;
         }
