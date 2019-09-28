@@ -2,7 +2,6 @@
     using System;
     using System.Diagnostics;
     using numpy;
-    using SharPy.Runtime;
     using tensorflow;
     using tensorflow.keras;
     using tensorflow.keras.layers;
@@ -40,7 +39,9 @@
             double testAcc = testEvalResult[1];
 
             Console.WriteLine($"Test accuracy: {testAcc}");
+            model.summary();
         }
+
         static void Main() {
             Console.Title = nameof(ResNetSampleProgram);
             GradientLog.OutputWriter = Console.Out;
