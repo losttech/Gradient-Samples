@@ -9,14 +9,16 @@
 
     class ResNetBlock: Model {
         const int PartCount = 3;
-        readonly Conv2D[] convs = new Conv2D[PartCount];
-        readonly BatchNormalization[] batchNorms = new BatchNormalization[PartCount];
+        readonly PythonList<Conv2D> convs = new PythonList<Conv2D>();
+        readonly PythonList<BatchNormalization> batchNorms = new PythonList<BatchNormalization>();
         public ResNetBlock(int kernelSize, int[] filters) {
-            for (int part = 0; part < this.convs.Length; part++) {
-                this.convs[part] = part == 1
+            for (int part = 0; part < PartCount; part++) {
+                this.convs.Add(part == 1
                     ? Conv2D.NewDyn(filters[part], kernel_size: kernelSize, padding: "same")
-                    : Conv2D.NewDyn(filters[part], kernel_size: (1, 1));
-                this.batchNorms[part] = new BatchNormalization();
+                    : Conv2D.NewDyn(filters[part], kernel_size: (1, 1)));
+                this.__setattr___dyn("conv" + part, this.convs[part]);
+                this.batchNorms.Add(new BatchNormalization());
+                this.__setattr___dyn("bn" + part, this.convs[part]);
             }
         }
 
@@ -39,10 +41,10 @@
             if (training != null)
                 batchNormExtraArgs["training"] = training;
 
-            for (int part = 0; part < this.convs.Length; part++) {
-                result = this.convs[part].__call__(result);
-                result = this.batchNorms[part].__call__(result, kwargs: batchNormExtraArgs);
-                if (part + 1 != this.convs.Length)
+            for (int part = 0; part < PartCount; part++) {
+                result = this.convs[part].apply(result);
+                result = this.batchNorms[part].apply(result, kwargs: batchNormExtraArgs);
+                if (part + 1 != PartCount)
                     result = tf.nn.relu(result);
             }
 
