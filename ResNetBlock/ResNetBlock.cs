@@ -13,12 +13,10 @@
         readonly PythonList<BatchNormalization> batchNorms = new PythonList<BatchNormalization>();
         public ResNetBlock(int kernelSize, int[] filters) {
             for (int part = 0; part < PartCount; part++) {
-                this.convs.Add(part == 1
+                this.convs.Add(this.Track(part == 1
                     ? Conv2D.NewDyn(filters[part], kernel_size: kernelSize, padding: "same")
-                    : Conv2D.NewDyn(filters[part], kernel_size: (1, 1)));
-                this.__setattr___dyn("conv" + part, this.convs[part]);
-                this.batchNorms.Add(new BatchNormalization());
-                this.__setattr___dyn("bn" + part, this.convs[part]);
+                    : Conv2D.NewDyn(filters[part], kernel_size: (1, 1))));
+                this.batchNorms.Add(this.Track(new BatchNormalization()));
             }
         }
 
