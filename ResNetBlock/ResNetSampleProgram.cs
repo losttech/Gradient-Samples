@@ -8,13 +8,13 @@
     using tensorflow.train;
 
     static class ResNetSampleProgram {
-        public static void Run() {
+        public static void Run(int epochs = 5) {
             // requires Internet connection
             (dynamic train, dynamic test) = tf.keras.datasets.fashion_mnist.load_data();
             // will be able to do (trainImages, trainLabels) = train;
-            ndarray trainImages = train.Item1 / 255.0f;
+            ndarray trainImages = np.expand_dims(train.Item1 / 255.0f, axis: 3);
             ndarray trainLabels = train.Item2;
-            ndarray testImages = test.Item1 / 255.0f;
+            ndarray testImages = np.expand_dims(test.Item1 / 255.0f, axis: 3);
             ndarray testLabels = test.Item2;
 
             bool loaded = 60000 == trainImages.Length;
@@ -33,7 +33,7 @@
                 loss: "sparse_categorical_crossentropy",
                 metrics: new dynamic[] { "accuracy" });
 
-            model.fit(trainImages, trainLabels, epochs: 5);
+            model.fit(trainImages, trainLabels, epochs: epochs);
 
             var testEvalResult = model.evaluate(testImages, testLabels);
             double testAcc = testEvalResult[1];
