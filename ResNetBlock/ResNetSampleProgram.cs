@@ -46,7 +46,7 @@
             Console.Title = nameof(ResNetSampleProgram);
             GradientLog.OutputWriter = Console.Out;
             GradientSetup.UseEnvironmentFromVariable();
-            Run();
+            CSharpOrNot.Run(".");
         }
     }
 }
