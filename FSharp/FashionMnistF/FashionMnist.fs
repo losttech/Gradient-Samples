@@ -42,4 +42,6 @@ let main argv =
     let accuracy = Core.Operators.float (Dyn.getIndex evalResult [1] : numpy.float64)
     printfn "Test accuracy: %f" accuracy
 
+    model.summary()
+
     0 // return an integer exit code
