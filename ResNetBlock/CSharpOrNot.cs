@@ -20,32 +20,31 @@
     public static class CSharpOrNot
     {
         public static Model CreateModel(int classCount) {
-            var activation = tf.keras.activations.selu_fn;
+            var activation = tf.keras.activations.elu_fn;
             const int filterCount = 32;
             int[] resNetFilters = {filterCount, filterCount, filterCount};
             var model = new Sequential(new Layer[] {
-                Conv2D.NewDyn(filters: filterCount, kernel_size: 5, padding: "same", activation: activation),
+                Conv2D.NewDyn(filters: filterCount, kernel_size: 5, padding: "same"),
+                Activation.NewDyn(activation),
                 new MaxPool2D(pool_size: 2),
                 new ResNetBlock(kernelSize: 3, filters: resNetFilters, activation: activation),
                 new ResNetBlock(kernelSize: 3, filters: resNetFilters, activation: activation),
                 new ResNetBlock(kernelSize: 3, filters: resNetFilters, activation: activation),
                 new AvgPool2D(pool_size: 2),
                 new Flatten(),
-                new Dense(units: 32, activation: activation, activity_regularizer: tf.keras.regularizers.l2()),
-                new Dense(units: classCount, activation: tf.nn.softmax_fn),
+                new Dense(units: 32, activation: activation),
+                new Dense(units: classCount, activation: activation),
             });
 
             model.compile(
-                optimizer: new Adam(kwargs: new PythonDict<string, object> {
-                    ["clipnorm"] = 1.0f,
-                }),
-                loss: "sparse_categorical_crossentropy",
+                optimizer: new Adam(epsilon: 1e-5),
+                loss: tf.keras.losses.mean_squared_error_fn,
                 metrics: new dynamic[] { "accuracy" });
 
             return model;
         }
 
-        const int Epochs = 20;
+        const int Epochs = 100;
         const int BatchSize = 1000;
         public const int Width = 64, Height = 64;
         public static readonly Size Size = new Size(Width, Height);
@@ -84,16 +83,20 @@
             var timer = Stopwatch.StartNew();
             ndarray<float> @in = InputToNumPy(trainData, sampleCount: TrainingSamples / SamplePart,
                 width: Width, height: Height);
-            ndarray<int> expectedOut = OutputToNumPy(trainValues);
+            ndarray<float> expectedOut = OutputToNumPy(trainValues);
             Console.WriteLine($"OK in {timer.ElapsedMilliseconds / 1000}s");
 
             var model = CreateModel(classCount: IncludeExtensions.Length);
-            model.fit_dyn(@in, expectedOut, epochs: Epochs, shuffle: false, batch_size: BatchSize,
-                validation_split: 0.1, callbacks: new[] { checkpointBest });
-
+            model.build(new TensorShape(null, Height, Width, 1));
             model.summary();
+            model.fit_dyn(@in, expectedOut, epochs: Epochs, shuffle: false, batch_size: BatchSize,
+                validation_split: 0.1, callbacks: new ICallback[] {
+                    //checkpointBest
+                },
+                verbose: TrainingVerbosity.LinePerEpoch);
 
             var fromCheckpoint = CreateModel(classCount: IncludeExtensions.Length);
+            fromCheckpoint.build(new TensorShape(null, Height, Width, 1));
             fromCheckpoint.load_weights(Path.GetFullPath("weights.best.hdf5"));
 
             @in = InputToNumPy(testData, sampleCount: TestSamples/SamplePart, width: Width, height: Height);
@@ -109,8 +112,9 @@
         public static ndarray<float> InputToNumPy(byte[] inputs, int sampleCount, int width, int height)
             => (dynamic)inputs.Select(b => (float)b).ToArray().NumPyCopy()
                 .reshape(new[] { sampleCount, height, width, 1 }) / 255.0f;
-        static ndarray<int> OutputToNumPy(int[] expectedOutputs)
-            => expectedOutputs.ToNumPyArray();
+        static ndarray<float> OutputToNumPy(int[] expectedOutputs)
+            => (ndarray<float>)np.eye(IncludeExtensions.Length, dtype: PythonClassContainer<float32>.Instance)
+                .__getitem__(expectedOutputs.ToNumPyArray().reshape(-1));
 
         static byte[] Sample(Random random, List<string[]>[] filesByExtension, Size size, int count,
             out int[] extensionIndices) {
