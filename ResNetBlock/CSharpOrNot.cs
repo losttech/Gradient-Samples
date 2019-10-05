@@ -7,10 +7,12 @@
     using System.IO;
     using System.Linq;
     using System.Runtime.InteropServices;
+    using System.Text;
     using System.Text.RegularExpressions;
     using numpy;
     using SharPy.Runtime;
     using tensorflow;
+    using tensorflow.core.protobuf.config_pb2;
     using tensorflow.keras;
     using tensorflow.keras.callbacks;
     using tensorflow.keras.layers;
@@ -21,49 +23,62 @@
     {
         public static Model CreateModel(int classCount) {
             var activation = tf.keras.activations.elu_fn;
-            const int filterCount = 32;
-            int[] resNetFilters = {filterCount, filterCount, filterCount};
+            const int filterCount = 8;
+            int[] resNetFilters = { filterCount, filterCount, filterCount };
             var model = new Sequential(new Layer[] {
+                new Dropout(rate: 0.05),
                 Conv2D.NewDyn(filters: filterCount, kernel_size: 5, padding: "same"),
                 Activation.NewDyn(activation),
                 new MaxPool2D(pool_size: 2),
                 new ResNetBlock(kernelSize: 3, filters: resNetFilters, activation: activation),
                 new ResNetBlock(kernelSize: 3, filters: resNetFilters, activation: activation),
                 new ResNetBlock(kernelSize: 3, filters: resNetFilters, activation: activation),
+                new ResNetBlock(kernelSize: 3, filters: resNetFilters, activation: activation),
+                new MaxPool2D(),
+                new ResNetBlock(kernelSize: 3, filters: resNetFilters, activation: activation),
+                new ResNetBlock(kernelSize: 3, filters: resNetFilters, activation: activation),
+                new MaxPool2D(),
+                new ResNetBlock(kernelSize: 3, filters: resNetFilters, activation: activation),
+                new ResNetBlock(kernelSize: 3, filters: resNetFilters, activation: activation),
                 new AvgPool2D(pool_size: 2),
                 new Flatten(),
-                new Dense(units: 32, activation: activation),
-                new Dense(units: classCount, activation: activation),
+                new Dense(units: classCount, activation: tf.nn.softmax_fn),
             });
 
             model.compile(
-                optimizer: new Adam(epsilon: 1e-5),
-                loss: tf.keras.losses.mean_squared_error_fn,
+                optimizer: new Adam(),
+                loss: tf.keras.losses.sparse_categorical_crossentropy_fn,
                 metrics: new dynamic[] { "accuracy" });
 
             return model;
         }
 
-        const int Epochs = 100;
-        const int BatchSize = 1000;
+        const int Epochs = 600;
+        const int BatchSize = 32;
         public const int Width = 64, Height = 64;
         public static readonly Size Size = new Size(Width, Height);
         // being opinionated here
         const string Tab = "    ";
         const char Whitespace = '\u00FF';
-        const float ValidationSplit = 0.1f, TestSplit = 0.1f;
-        const int TrainingSamples = 200000, TestSamples = 10000, ValidationSamples = 10000;
-        const int SamplePart = 10;
+        const float TestSplit = 0.1f;
+        const int TrainingSamples = 400000, TestSamples = 20000;
+        const int SamplePart = 1;
 
-        public static void Run(string directory) {
-            GradientSetup.EnsureInitialized();
-
-            var filesByExtension = ReadCodeFiles(directory,
+        public static void Run(params string[] directories) {
+            var filesByExtension = ReadCodeFiles(directories,
                 includeExtensions: IncludeExtensions,
                 codeFilter: lines => lines.Length >= 10);
+            Train(filesByExtension);
+        }
+        public static void Train(List<string[]>[] filesByExtension) {
+            GradientSetup.EnsureInitialized();
 
-            var random = new Random(42);
-            tf.set_random_seed(42);
+            dynamic config = config_pb2.ConfigProto();
+            config.gpu_options.allow_growth = true;
+            tf.keras.backend.set_session(Session.NewDyn(config: config));
+
+            var random = new Random(4242);
+            tf.set_random_seed(4242);
 
             var test = Split(random, filesByExtension, TestSplit, out filesByExtension);
 
@@ -78,29 +93,43 @@
             var checkpointBest = new ModelCheckpoint(
                 filepath: Path.Combine(Environment.CurrentDirectory, "weights.best.hdf5"),
                 save_best_only: true, save_weights_only: true);
+            // not present in 1.10, but present in 1.14
+            ((dynamic)checkpointBest).save_freq = "epoch";
 
             Console.Write("loading data to TensorFlow...");
             var timer = Stopwatch.StartNew();
             ndarray<float> @in = InputToNumPy(trainData, sampleCount: TrainingSamples / SamplePart,
                 width: Width, height: Height);
-            ndarray<float> expectedOut = OutputToNumPy(trainValues);
+            ndarray<int> expectedOut = OutputToNumPy(trainValues);
             Console.WriteLine($"OK in {timer.ElapsedMilliseconds / 1000}s");
+
+            string runID = DateTime.Now.ToString("s").Replace(':', '-');
+            string logDir = Path.Combine(".", "logs", runID);
+            Directory.CreateDirectory(logDir);
+            var tensorboard = new TensorBoard(log_dir: logDir);
 
             var model = CreateModel(classCount: IncludeExtensions.Length);
             model.build(new TensorShape(null, Height, Width, 1));
             model.summary();
-            model.fit_dyn(@in, expectedOut, epochs: Epochs, shuffle: false, batch_size: BatchSize,
-                validation_split: 0.1, callbacks: new ICallback[] {
-                    //checkpointBest
-                },
-                verbose: TrainingVerbosity.LinePerEpoch);
+
+            GC.Collect();
+
+            var valIn = InputToNumPy(testData, sampleCount: TestSamples / SamplePart, width: Width, height: Height);
+            var valOut = OutputToNumPy(testValues);
+
+            fit(model, @in, expectedOut,
+                batchSize: BatchSize,
+                epochs: Epochs,
+                callbacks: new ICallback[] {
+                    checkpointBest,
+                    tensorboard,
+                }, validationInput: valIn, validationTarget: valOut);
+
+            model.save_weights(Path.GetFullPath("weights.final.hdf5"));
 
             var fromCheckpoint = CreateModel(classCount: IncludeExtensions.Length);
             fromCheckpoint.build(new TensorShape(null, Height, Width, 1));
             fromCheckpoint.load_weights(Path.GetFullPath("weights.best.hdf5"));
-
-            @in = InputToNumPy(testData, sampleCount: TestSamples/SamplePart, width: Width, height: Height);
-            expectedOut = OutputToNumPy(testValues);
 
             var evaluationResults = fromCheckpoint.evaluate(@in, expectedOut);
             Console.WriteLine($"reloaded: loss: {evaluationResults[0]} acc: {evaluationResults[1]}");
@@ -112,9 +141,8 @@
         public static ndarray<float> InputToNumPy(byte[] inputs, int sampleCount, int width, int height)
             => (dynamic)inputs.Select(b => (float)b).ToArray().NumPyCopy()
                 .reshape(new[] { sampleCount, height, width, 1 }) / 255.0f;
-        static ndarray<float> OutputToNumPy(int[] expectedOutputs)
-            => (ndarray<float>)np.eye(IncludeExtensions.Length, dtype: PythonClassContainer<float32>.Instance)
-                .__getitem__(expectedOutputs.ToNumPyArray().reshape(-1));
+        static ndarray<int> OutputToNumPy(int[] expectedOutputs)
+            => expectedOutputs.ToNumPyArray();
 
         static byte[] Sample(Random random, List<string[]>[] filesByExtension, Size size, int count,
             out int[] extensionIndices) {
@@ -178,13 +206,73 @@
             Render(lines, new Point(x, y), blockSize, destination: target);
         }
 
+        static void fit(Model @this, numpy.I_ArrayLike input, numpy.I_ArrayLike targetValues,
+            int? stepsPerEpoch = null, int? validationSteps = null,
+            int batchSize = 1,
+            int epochs = 1,
+            TrainingVerbosity verbosity = TrainingVerbosity.ProgressBar,
+            IEnumerable<ICallback> callbacks = null,
+            numpy.I_ArrayLike validationInput = null,
+            numpy.I_ArrayLike validationTarget = null) {
+            if (input == null) throw new ArgumentNullException(nameof(input));
+            if (targetValues == null) throw new ArgumentNullException(nameof(targetValues));
+            if (stepsPerEpoch <= 0) throw new ArgumentOutOfRangeException(nameof(stepsPerEpoch));
+            if (validationSteps <= 0)
+                throw new ArgumentOutOfRangeException(nameof(validationSteps));
+            if (validationSteps != null && stepsPerEpoch == null)
+                throw new ArgumentException(
+                    $"Can't set {nameof(validationSteps)} without setting {nameof(stepsPerEpoch)}",
+                    paramName: nameof(validationSteps));
+
+            var validation = validationInput == null && validationTarget == null
+                ? (((numpy.I_ArrayLike, numpy.I_ArrayLike)?)null)
+                : validationInput != null && validationTarget != null
+                    ? (validationInput, validationTarget)
+                    : throw new ArgumentException(
+                        $"Both (or none) {nameof(validationInput)} and {nameof(validationTarget)} must be provided");
+
+            @this.fit_dyn(input, targetValues,
+                epochs: epochs,
+                batch_size: batchSize,
+                verbose: (int)verbosity,
+                callbacks: callbacks,
+                validation_data: validation,
+                shuffle: false,
+                steps_per_epoch: stepsPerEpoch,
+                validation_steps: validationSteps
+            );
+        }
+
+        public static List<string[]>[] ReadCodeFiles(IEnumerable<string> directories,
+            string[] includeExtensions,
+            Func<string[], bool> codeFilter) {
+            var files = Range(0, includeExtensions.Length)
+                .Select(_ => new List<string[]>())
+                .ToArray();
+
+            foreach (string directory in directories) {
+                ReadCodeFiles(files, directory, includeExtensions, codeFilter);
+            }
+
+            return files;
+        }
+
         static List<string[]>[] ReadCodeFiles(string directory, string[] includeExtensions,
             Func<string[], bool> codeFilter) {
             var files = Range(0, includeExtensions.Length)
                 .Select(_ => new List<string[]>())
                 .ToArray();
 
+            ReadCodeFiles(files, directory, includeExtensions, codeFilter);
+
+            return files;
+        }
+
+        static void ReadCodeFiles(List<string[]>[] files, string directory, string[] includeExtensions, Func<string[], bool> codeFilter) {
             foreach (string filePath in Directory.EnumerateFiles(directory, "*.*", SearchOption.AllDirectories)) {
+                if (filePath.Contains(
+                    Path.DirectorySeparatorChar + "out" + Path.DirectorySeparatorChar))
+                    continue;
                 string extension = Path.GetExtension(filePath);
                 int extensionIndex = Array.IndexOf(includeExtensions, extension);
                 if (extensionIndex < 0) continue;
@@ -192,23 +280,32 @@
                 if (!codeFilter(code)) continue;
                 files[extensionIndex].Add(code);
             }
-
-            return files;
         }
 
         public static string[] ReadCode(string path)
             => File.ReadAllLines(path)
                 .Select(line => line.Replace("\t", Tab))
-                // replace non-ASCII characters with underscore
-                .Select(line => Regex.Replace(line, @"[^\u0000-\u007F]", "_"))
-                // make all whitespace stand out
-                .Select(line => Regex.Replace(line, @"[\u0000-\u0020]", Whitespace.ToString()))
+                .Select(line => {
+                    var result = new StringBuilder(line.Length);
+                    // replace non-ASCII characters with underscore
+                    // make all whitespace stand out
+                    foreach (char c in line) {
+                        result.Append(
+                            c <= 32 ? Whitespace
+                            : c >= 255 ? '_'
+                            : c);
+                    }
+                    return result.ToString();
+                })
                 .ToArray();
 
         public static void Render(string[] lines, Point startingPoint, Size size, byte[] destination) {
             if (size.IsEmpty) throw new ArgumentException();
             if (destination.Length < size.Width * size.Height) throw new ArgumentException();
-            if (startingPoint.Y >= lines.Length) throw new ArgumentException();
+            if (startingPoint.Y == lines.Length) {
+                Array.Fill(destination, (byte)Whitespace);
+                return;
+            }
 
             for (int y = 0; y < size.Height; y++) {
                 int sourceY = y + startingPoint.Y;
@@ -301,15 +398,13 @@
 
         public static readonly string[] IncludeExtensions = {
             ".cs",
-            ".dart",
-            ".go",
-            ".java",
-            ".hs", // Haskell
-            ".m", // Objective-C
             ".py",
-            ".rs", // Rust
-            ".u", // Unison
-            ".xml",
+            ".h",
+            ".cc",
+            ".c",
+            ".tcl",
+            ".java",
+            ".sh",
         };
     }
 }

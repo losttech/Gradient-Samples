@@ -42,11 +42,11 @@
             model.summary();
         }
 
-        static void Main() {
+        static void Main(string[] args) {
             Console.Title = nameof(ResNetSampleProgram);
             GradientLog.OutputWriter = Console.Out;
             GradientSetup.UseEnvironmentFromVariable();
-            CSharpOrNot.Run(".");
+            CSharpOrNot.Run(args);
         }
     }
 }
