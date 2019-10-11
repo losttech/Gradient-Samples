@@ -8,9 +8,7 @@
     using System.Linq;
     using System.Runtime.InteropServices;
     using System.Text;
-    using System.Text.RegularExpressions;
     using numpy;
-    using SharPy.Runtime;
     using tensorflow;
     using tensorflow.core.protobuf.config_pb2;
     using tensorflow.keras;
@@ -117,9 +115,8 @@
             var valIn = InputToNumPy(testData, sampleCount: TestSamples / SamplePart, width: Width, height: Height);
             var valOut = OutputToNumPy(testValues);
 
-            fit(model, @in, expectedOut,
-                batchSize: BatchSize,
-                epochs: Epochs,
+            model.fit(@in, expectedOut,
+                batchSize: BatchSize, epochs: Epochs,
                 callbacks: new ICallback[] {
                     checkpointBest,
                     tensorboard,
@@ -204,43 +201,6 @@
             int y = random.Next(Math.Max(1, lines.Length - 1));
             int x = random.Next(Math.Max(1, lines[y].Length));
             Render(lines, new Point(x, y), blockSize, destination: target);
-        }
-
-        static void fit(Model @this, numpy.I_ArrayLike input, numpy.I_ArrayLike targetValues,
-            int? stepsPerEpoch = null, int? validationSteps = null,
-            int batchSize = 1,
-            int epochs = 1,
-            TrainingVerbosity verbosity = TrainingVerbosity.ProgressBar,
-            IEnumerable<ICallback> callbacks = null,
-            numpy.I_ArrayLike validationInput = null,
-            numpy.I_ArrayLike validationTarget = null) {
-            if (input == null) throw new ArgumentNullException(nameof(input));
-            if (targetValues == null) throw new ArgumentNullException(nameof(targetValues));
-            if (stepsPerEpoch <= 0) throw new ArgumentOutOfRangeException(nameof(stepsPerEpoch));
-            if (validationSteps <= 0)
-                throw new ArgumentOutOfRangeException(nameof(validationSteps));
-            if (validationSteps != null && stepsPerEpoch == null)
-                throw new ArgumentException(
-                    $"Can't set {nameof(validationSteps)} without setting {nameof(stepsPerEpoch)}",
-                    paramName: nameof(validationSteps));
-
-            var validation = validationInput == null && validationTarget == null
-                ? (((numpy.I_ArrayLike, numpy.I_ArrayLike)?)null)
-                : validationInput != null && validationTarget != null
-                    ? (validationInput, validationTarget)
-                    : throw new ArgumentException(
-                        $"Both (or none) {nameof(validationInput)} and {nameof(validationTarget)} must be provided");
-
-            @this.fit_dyn(input, targetValues,
-                epochs: epochs,
-                batch_size: batchSize,
-                verbose: (int)verbosity,
-                callbacks: callbacks,
-                validation_data: validation,
-                shuffle: false,
-                steps_per_epoch: stepsPerEpoch,
-                validation_steps: validationSteps
-            );
         }
 
         public static List<string[]>[] ReadCodeFiles(IEnumerable<string> directories,
