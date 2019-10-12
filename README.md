@@ -22,6 +22,9 @@ See also:
 > MARIANA:
 > He shall speak not reverbering injurance.
 
+**CSharpOrNot** - a mini-ResNet convolutional network, that guesses programming language,
+given a rectangular text block from a code file. Has a cross-platform UI demo.
+
 **GPT-2** - latest English [language model from OpenAI](https://blog.openai.com/better-language-models/)
 (smaller version, pretrained). Added fine-tuning from https://github.com/nshepperd/gpt-2.
 
