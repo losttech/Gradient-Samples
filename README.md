@@ -29,6 +29,9 @@ See also:
 
 **LinearSVM** - incomplete port due to a bug with tf.flags
 
+**ResNetBlock** - same as FashionMnistClassification above, but shows `Model` subclassing
+to implement ResNet block.
+
 **SimpleApproximation** - uses a simple 1 hidden layer neural network to approximate an arbitrary function.
 
 All models **can be modified and trained**.
