@@ -7,7 +7,7 @@
     using tensorflow.keras;
     using tensorflow.keras.layers;
 
-    class ResNetBlock: Model {
+    public class ResNetBlock: Model {
         const int PartCount = 3;
         readonly PythonList<Conv2D> convs = new PythonList<Conv2D>();
         readonly PythonList<BatchNormalization> batchNorms = new PythonList<BatchNormalization>();
