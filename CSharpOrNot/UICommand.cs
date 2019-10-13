@@ -21,7 +21,6 @@
 
         public UICommand() {
             this.IsCommand("ui");
-            this.IsCommand("run");
         }
     }
 }
