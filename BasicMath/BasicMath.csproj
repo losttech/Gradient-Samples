@@ -8,7 +8,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Gradient" Version="0.1.10-tech-preview6.2" />
+    <PackageReference Include="Gradient" Version="0.1.10-tech-preview6.4" />
   </ItemGroup>
 
 </Project>

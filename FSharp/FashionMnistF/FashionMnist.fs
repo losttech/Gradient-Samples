@@ -39,7 +39,7 @@ let main argv =
     model.fit(trainImages, trainLabels, epochs = 5) |> ignore
 
     let evalResult = model.evaluate(testImages, testLabels)
-    let accuracy = Core.Operators.float (Dyn.getIndex evalResult [1] : numpy.float64)
+    let accuracy = Core.Operators.float (Dyn.getIndexer [1] evalResult : numpy.float64)
     printfn "Test accuracy: %f" accuracy
 
     model.summary()
