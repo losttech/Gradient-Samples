@@ -25,19 +25,7 @@
             this.outputChannels = filters[PartCount - 1];
         }
 
-        public override dynamic call(IEnumerable<IGraphNodeBase> inputs, ImplicitContainer<IGraphNodeBase> training, IGraphNodeBase mask) {
-            return this.callImpl((Tensor)inputs.Single(), training);
-        }
-
-        public override object call(object inputs, bool training, IGraphNodeBase mask = null) {
-            return this.callImpl((Tensor)inputs, training);
-        }
-
-        public override dynamic call(object inputs, ImplicitContainer<IGraphNodeBase> training = null, IEnumerable<IGraphNodeBase> mask = null) {
-            return this.callImpl((Tensor)inputs, training?.Value);
-        }
-
-        object callImpl(IGraphNodeBase inputs, dynamic training) {
+        object CallImpl(IGraphNodeBase inputs, dynamic training) {
             IGraphNodeBase result = inputs;
 
             var batchNormExtraArgs = new PythonDict<string, object>();
@@ -64,6 +52,18 @@
             }
 
             return input_shape;
+        }
+
+        public override dynamic call(IEnumerable<IGraphNodeBase> inputs, ImplicitContainer<IGraphNodeBase> training, IGraphNodeBase mask) {
+            return this.CallImpl((Tensor)inputs.Single(), training);
+        }
+
+        public override object call(object inputs, bool training, IGraphNodeBase mask = null) {
+            return this.CallImpl((Tensor)inputs, training);
+        }
+
+        public override dynamic call(object inputs, ImplicitContainer<IGraphNodeBase> training = null, IEnumerable<IGraphNodeBase> mask = null) {
+            return this.CallImpl((Tensor)inputs, training?.Value);
         }
     }
 }

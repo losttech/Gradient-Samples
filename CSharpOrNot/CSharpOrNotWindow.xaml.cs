@@ -3,10 +3,12 @@
     using System.Drawing.Imaging;
     using System.IO;
     using System.Linq;
+    using System.Threading.Tasks;
     using Avalonia;
     using Avalonia.Controls;
     using Avalonia.Interactivity;
     using Avalonia.Markup.Xaml;
+    using Avalonia.Media;
     using Gradient;
     using MoreLinq;
     using numpy;
@@ -20,6 +22,7 @@
 
     public class CSharpOrNotWindow : Window
     {
+        readonly ContentControl languageBox;
         readonly TextBox codeDisplay;
         readonly TextBlock codeWindow;
         readonly TextBlock language;
@@ -38,6 +41,7 @@
 
             this.codeWindow = this.Get<TextBlock>("CodeWindow");
             this.language = this.Get<TextBlock>("Language");
+            this.languageBox = this.Get<ContentControl>("LanguageBox");
             this.codeImage = this.Get<Image>("CodeImage");
             this.openFileButton = this.Get<Button>("OpenFileButton");
 
@@ -48,6 +52,8 @@
 
             this.model = CreateModel(classCount: IncludeExtensions.Length);
             this.model.build(new TensorShape(null, CSharpOrNot.Height, CSharpOrNot.Width, 1));
+
+            this.LoadWeights();
         }
 
         void CodeDisplayOnPropertyChanged(object sender, AvaloniaPropertyChangedEventArgs e) {
@@ -85,7 +91,10 @@
                 width: CSharpOrNot.Width, height: CSharpOrNot.Height);
             var prediction = this.model.predict(@in);
             int extensionIndex = (int)prediction.argmax();
-            this.language.Text = IncludeExtensions[extensionIndex].Substring(1);
+            string extension = IncludeExtensions[extensionIndex].Substring(1);
+            bool csharp = extension == "cs";
+            this.language.Text = csharp ? "C#" : $"Not C#! ({extension}?)";
+            this.languageBox.Background = csharp ? Brushes.Green : Brushes.Red;
         }
 
         static Point GetCursorPos(string text, int position) {
@@ -114,15 +123,14 @@
             AvaloniaXamlLoader.Load(this);
         }
 
-        async void OpenFileClick(object sender, RoutedEventArgs e) {
-            this.openFileButton.IsEnabled = false;
-            if (!this.loaded) {
+        async Task LoadWeights() {
+            while (!this.loaded) {
                 string modelFile = Environment.GetEnvironmentVariable("CS_OR_NOT_WEIGHTS")
-                    ?? (await new OpenFileDialog {
-                            Title = "Load model weights",
-                            InitialDirectory = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments),
-                            AllowMultiple = false,
-                        }.ShowAsync(this)).Single();
+                                   ?? (await new OpenFileDialog {
+                                       Title = "Load model weights",
+                                       InitialDirectory = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments),
+                                       AllowMultiple = false,
+                                   }.ShowAsync(this)).Single();
 
                 if (Path.GetExtension(modelFile) == ".index")
                     modelFile = Path.Combine(
@@ -135,13 +143,17 @@
                 this.Title = modelFile;
             }
 
+            this.openFileButton.IsEnabled = true;
+        }
+
+        async void OpenFileClick(object sender, RoutedEventArgs e) {
             var dialog = new OpenFileDialog {
                 Title = "Select code file",
                 InitialDirectory = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments),
                 AllowMultiple = false,
             };
             string[] files = await dialog.ShowAsync(this);
-            this.openFileButton.IsEnabled = true;
+
             if (files.Length == 0) return;
             this.code = ReadCode(files[0]);
             this.codeDisplay.Text = File.ReadAllText(files[0]);
