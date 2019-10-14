@@ -16,10 +16,9 @@ This sample requires TensorFlow 1.14 due to a bug in `BatchNormalization` layer 
 1. Download & extract pretrained model from
 [GitHub](https://github.com/losttech/Gradient-Samples/releases/download/csharp-or-not%2Fv1/csharp-or-not-v1.zip)
 or train your own (instructions pending)
-1. Launch CSharpOrNot (see above)
-1. Click on "Open File..."
+1. Launch CSharpOrNot (see above). A dialog will appear to load model weights.
 1. Find weights `.index` or `.hdf5` file to load the model
-1. A file dialog will open again to let you pick a code file
+1. Click on "Open File..." to load code
 1. Select any source code file from your projects
 1. After it is loaded, move cursor around and watch programming language detected
 1. Click on "Open File..." again to load a different code file (no need to load model again)
