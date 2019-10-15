@@ -122,6 +122,8 @@
                 (int testSamples) => this.TestSamples = testSamples);
             this.HasOption("seed=", "Attempts to make training reproducible by using a fixed random seed",
                 (int seed) => this.Seed = seed);
+
+            this.AllowsAnyAdditionalArguments("directories with training source code");
         }
 
         static ndarray<int> OutputToNumPy(int[] expectedOutputs)
