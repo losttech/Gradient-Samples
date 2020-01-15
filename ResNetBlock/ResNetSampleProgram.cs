@@ -45,7 +45,7 @@
         static void Main() {
             Console.Title = nameof(ResNetSampleProgram);
             GradientLog.OutputWriter = Console.Out;
-            GradientSetup.UseEnvironmentFromVariable();
+            GradientEngine.UseEnvironmentFromVariable();
             Run();
         }
     }
