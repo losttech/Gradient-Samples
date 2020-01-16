@@ -35,7 +35,7 @@
             var random = this.Seed == null ? new Random() : new Random(this.Seed.Value);
             var stop = new CancellationTokenSource();
             Console.CancelKeyPress += delegate { stop.Cancel(); };
-            dynamic config = config_pb2.ConfigProto();
+            dynamic config = config_pb2.ConfigProto.CreateInstance();
             config.gpu_options.allow_growth = true;
             new Gpt2Trainer(dataset, encoder, hParams, this.BatchSize, this.SampleLength, random) {
                 SaveEvery = this.SaveEvery,

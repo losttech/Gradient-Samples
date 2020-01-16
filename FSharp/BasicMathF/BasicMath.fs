@@ -2,6 +2,7 @@
 
 open System
 open Gradient
+open Gradient.BuiltIns
 open tensorflow
 open tensorflow.summary
 open tensorflow.core.protobuf.config_pb2
@@ -9,12 +10,12 @@ open tensorflow.core.protobuf.config_pb2
 let inline (!>) (x:^a) : ^b = ((^a or ^b) : (static member op_Implicit : ^a -> ^b) x)
 // F# does not use implicit conversions, when resolving an overload
 // so this has to be applied explicitly
-let inline implicit (x:^a): SharPy.Runtime.ImplicitContainer< ^a > = !> x
+let inline implicit (x:^a): ImplicitContainer< ^a > = !> x
 
 [<EntryPoint>]
 let main argv =
     GradientSetup.OptInToUsageDataCollection()
-    GradientSetup.UseEnvironmentFromVariable() |> ignore
+    GradientEngine.UseEnvironmentFromVariable() |> ignore
 
     GradientLog.OutputWriter <- Console.Out
 
@@ -25,7 +26,7 @@ let main argv =
     let b = tf.constant(10.0, name="b")
 
     let sum = tf.add(a, b, name="sum")
-    let div = tf.div(a, b, name="div")
+    let div = tf.divide(a, b, name="div")
 
     let config = !? config_pb2.ConfigProto ()
     config?gpu_options?allow_growth <- true

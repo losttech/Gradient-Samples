@@ -4,6 +4,7 @@
     using System.Linq;
     using CommandLine;
     using Gradient;
+    using Gradient.ManualWrappers;
     using SharPy.Runtime;
     using numpy;
     using tensorflow;
@@ -16,16 +17,16 @@
         readonly Random random = new Random();
         readonly CharRNNModelParameters parameters;
         readonly Func<int, RNNCell> cellFactory;
-        readonly List<RNNCell> cells = new List<RNNCell>();
+        readonly List<IRNNCell> cells = new List<IRNNCell>();
         readonly RNNCell rnn;
-        internal readonly dynamic inputData;
+        internal readonly Tensor inputData;
         internal readonly seq2seqState initialState;
         internal readonly dynamic trainOp;
         readonly Tensor logits;
         readonly Tensor loss;
         internal readonly Tensor cost;
         internal readonly seq2seqState finalState;
-        readonly dynamic probs;
+        readonly Tensor probs;
         internal readonly dynamic targets;
         internal readonly Variable learningRate;
 
@@ -40,11 +41,12 @@
                 throw new NotSupportedException(parameters.ModelType.ToString());
 
             for(int i = 0; i < parameters.LayerCount; i++) {
-                RNNCell cell = this.cellFactory(parameters.RNNSize);
+                IRNNCell cell = this.cellFactory(parameters.RNNSize);
                 if (training && (parameters.KeepOutputProbability < 1 || parameters.KeepInputProbability < 1))
-                    cell = new DropoutWrapper(cell,
-                        input_keep_prob: parameters.KeepInputProbability,
-                        output_keep_prob: parameters.KeepOutputProbability);
+                    cell = new DropoutWrapper(kwargs: new Dictionary<string, object> {
+                        ["input_keep_prob"] = parameters.KeepInputProbability,
+                        ["output_keep_prob"] = parameters.KeepOutputProbability
+                    }, cell);
                 this.cells.Add(cell);
             }
             this.rnn = new MultiRNNCell(this.cells, state_is_tuple: true);
@@ -59,7 +61,7 @@
             });
 
             Variable embedding = tf.get_variable("embedding", new TensorShape(parameters.VocabularySize, parameters.RNNSize));
-            Tensor input = tf.nn.embedding_lookup(embedding, this.inputData);
+            Tensor input = tf.nn.embedding_lookup_dyn(embedding, this.inputData);
 
             // dropout beta testing: double check which one should affect next line
             if (training && parameters.KeepOutputProbability < 1)
@@ -84,7 +86,7 @@
             var output = tensorflow.tf.reshape(contatenatedOutputs, new[] { -1, parameters.RNNSize });
 
             this.logits = tf.matmul(output, softmax_W) + softmax_b;
-            this.probs = tf.nn.softmax(new[] { this.logits });
+            this.probs = tf.nn.softmax_dyn(new[] { this.logits });
             this.loss = tensorflow.contrib.legacy_seq2seq.legacy_seq2seq.sequence_loss_by_example_dyn(
                 logits: new[] { this.logits },
                 targets: new[] { tf.reshape(this.targets, new[] { -1 }) },
@@ -97,11 +99,12 @@
             this.cost = cost;
             this.finalState = lastState;
             this.learningRate = new Variable(0.0, trainable: false);
-            var tvars = tf.trainable_variables();
 
-            IEnumerable<object> grads = tf.clip_by_global_norm(tf.gradients(this.cost, tvars), parameters.GradientClip).Item1;
+            IEnumerable<Variable> tvars = tf.trainable_variables();
+            IEnumerable<object> grads = tf.gradients_dyn(this.cost, tvars);
+            grads = tf.clip_by_global_norm(grads.Cast<IGraphNodeBase>(), parameters.GradientClip).Item1;
             AdamOptimizer optimizer = null;
-            new name_scope("optimizer").UseSelf(_ => optimizer = new AdamOptimizer(this.learningRate));
+            new name_scope("optimizer").UseSelf(_ => optimizer = AdamOptimizer.NewDyn(this.learningRate));
             this.trainOp = optimizer.apply_gradients(grads.Zip(tvars, (grad, @var) => (dynamic)(grad, @var)));
 
             tf.summary.histogram("logits", new[] { this.logits });

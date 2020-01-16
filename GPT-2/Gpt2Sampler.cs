@@ -28,7 +28,7 @@
                     logits);
             }
 
-            Tensor isTopKZero = tf.equal(topK, 0);
+            Tensor isTopKZero = tf.equal_dyn(topK, 0);
             return tf.cond_dyn(isTopKZero,
                 PythonFunctionContainer.Of(() => logits),
                 PythonFunctionContainer.Of(TopK));

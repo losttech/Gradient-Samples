@@ -69,7 +69,7 @@ namespace Gradient.Samples.GPT2 {
                     temperature: 1.0f,
                     topK: 40);
 
-                var trainVars = tf.trainable_variables().Where((dynamic var) => var.name.Contains("model"));
+                var trainVars = ((IEnumerable<Variable>)tf.trainable_variables()).Where(var => var.name.Contains("model"));
                 var optimizer = new AdamOptimizer(learning_rate: 0.0002).minimize(loss, var_list: trainVars);
 
                 var saver = new Saver(

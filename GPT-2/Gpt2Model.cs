@@ -33,7 +33,7 @@
 
         static Tensor Softmax(Tensor input, int axis = -1)
         {
-            var negative = input - tf.reduce_max(input, axis: axis, keepdims: true);
+            var negative = input - tf.reduce_max(input, axis: new[] { axis }, keepdims: true);
             var exp = tf.exp_dyn(negative);
             return exp / tf.reduce_sum(exp, axis: axis, keepdims: true);
         }
@@ -118,10 +118,11 @@
 
         static ValueTuple<Tensor, Tensor> Attention(Tensor input, object scope, int nState, Tensor past = null, dynamic hParams = null)
         {
-            Trace.Assert(input.shape.ndims == 3);
+            if (input.shape.ndims != 3)
+                throw new ArgumentException();
             Trace.Assert(nState % (int)hParams.n_head == 0);
-            if (past != null)
-                Trace.Assert(past.shape.ndims == 5);
+            if (past != null && past.shape.ndims != 5)
+                throw new ArgumentException();
 
             Tensor SplitHeads(Tensor x) =>
                 // From [batch, sequence, features] to [batch, heads, sequence, features]

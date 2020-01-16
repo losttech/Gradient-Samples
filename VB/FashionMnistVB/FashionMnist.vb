@@ -1,6 +1,6 @@
 Imports System
 Imports Gradient
-Imports SharPy.Runtime
+Imports Gradient.BuiltIns
 Imports tensorflow
 Imports tensorflow.keras
 Imports tensorflow.keras.layers
@@ -9,7 +9,7 @@ Imports tensorflow.keras.optimizers
 Module Program
     Sub Main()
         GradientLog.OutputWriter = Console.Out
-        GradientSetup.UseEnvironmentFromVariable()
+        GradientEngine.UseEnvironmentFromVariable()
 
         ' requires Internet connection
         Dim data = tf.keras.datasets.fashion_mnist.load_data()
@@ -28,10 +28,9 @@ Module Program
         })
 
         model.compile(
-            optimizer:=New Adam(),
+            optimizer:=New ImplicitContainer(Of Object)(New Adam()),
             loss:="sparse_categorical_crossentropy",
             metrics:=New Object() {"accuracy"})
-
 
         model.fit(trainImages, trainLabels, epochs:=5)
 

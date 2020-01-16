@@ -24,8 +24,9 @@
         }
 
         static int Main(string[] args) {
+            Console.Title = "LinearSVM";
             GradientLog.OutputWriter = Console.Out;
-            GradientSetup.UseEnvironmentFromVariable();
+            GradientEngine.UseEnvironmentFromVariable();
 
             // required before using PythonEngine
             GradientSetup.EnsureInitialized();
@@ -74,7 +75,7 @@
                 sess.run(init);
                 for(int step = 0; step < this.flags.StepCount; step++)
                 {
-                    (numpy.ndarray @in, numpy.ndarray @out) = NextBatch(trainIn, trainOut, sampleCount: this.flags.BatchSize);
+                    (numpy.ndarray @in, numpy.ndarray @out) = this.NextBatch(trainIn, trainOut, sampleCount: this.flags.BatchSize);
                     var feed = new PythonDict<object, object> {
                         [inPlace] = @in,
                         [outPlace] = @out,

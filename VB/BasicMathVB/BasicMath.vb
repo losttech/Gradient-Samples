@@ -7,7 +7,7 @@ Imports tensorflow.summary
 Module Program
     Sub Main(args As String())
         GradientSetup.OptInToUsageDataCollection()
-        GradientSetup.UseEnvironmentFromVariable()
+        GradientEngine.UseEnvironmentFromVariable()
 
         GradientLog.OutputWriter = Console.Out
 
@@ -20,7 +20,7 @@ Module Program
         ' ConfigProto here must be wrapped in () to tell Visual Basic,
         ' that .ConfigProto() is not the same as .ConfigProto.
         ' Alternatively, one can write .ConfigProto()()
-        Dim config = (config_pb2.ConfigProto)()
+        Dim config = config_pb2.ConfigProto.CreateInstance()
         config.gpu_options.allow_growth = True
         Session.NewDyn(config:=config).UseSelf(Sub(sess)
                                                    With sess

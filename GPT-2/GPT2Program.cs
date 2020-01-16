@@ -9,9 +9,8 @@
         {
             Console.Title = "GPT-2";
             GradientSetup.OptInToUsageDataCollection();
-            GradientSetup.UseEnvironmentFromVariable();
-            // force Gradient initialization
-            tensorflow.tf.no_op();
+            GradientEngine.UseEnvironmentFromVariable();
+            GradientSetup.EnsureInitialized();
 
             return ConsoleCommandDispatcher.DispatchCommand(
                 ConsoleCommandDispatcher.FindCommandsInSameAssemblyAs(typeof(Gpt2Program)),

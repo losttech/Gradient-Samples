@@ -17,8 +17,9 @@
         const string CharsVocabularyFileName = "chars_vocab";
 
         static int Main(string[] args) {
+            Console.Title = "CharRNN";
             GradientLog.OutputWriter = Console.Out;
-            GradientSetup.UseEnvironmentFromVariable();
+            GradientEngine.UseEnvironmentFromVariable();
 
             // ported from https://github.com/sherjilozair/char-rnn-tensorflow
             return Parser.Default.ParseArguments<CharRNNTrainingParameters, CharRNNSamplingParameters>(args)

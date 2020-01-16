@@ -8,15 +8,15 @@
     static class BasicMathProgram {
         static void Main() {
             GradientLog.OutputWriter = Console.Out;
-            GradientSetup.UseEnvironmentFromVariable();
+            GradientEngine.UseEnvironmentFromVariable();
 
             Tensor a = tf.constant(5.0, name: "a");
             Tensor b = tf.constant(10.0, name: "b");
 
             Tensor sum = tf.add(a, b, name: "sum");
-            Tensor div = tf.div(a, b, name: "div");
+            Tensor div = tf.divide(a, b, name: "div");
 
-            dynamic config = config_pb2.ConfigProto();
+            dynamic config = config_pb2.ConfigProto.CreateInstance();
             // unless this is set, tensorflow-gpu consumes all of GPU memory
             // don't set it if you don't want you training to crash due to random OOM in the middle
             config.gpu_options.allow_growth = true;
