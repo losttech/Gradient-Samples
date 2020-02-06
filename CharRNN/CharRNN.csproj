@@ -16,6 +16,7 @@
   <ItemGroup>
     <PackageReference Include="CommandLineParser" Version="2.3.0" />
     <PackageReference Include="Gradient" Version="0.15.7-CI-20200205-005" />
+    <PackageReference Include="LostTech.NumPy" Version="(0.1.3, 0.2.0)" />
     <PackageReference Include="Newtonsoft.Json" Version="12.0.1" />
   </ItemGroup>
 

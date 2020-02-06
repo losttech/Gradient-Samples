@@ -112,13 +112,13 @@
             tf.summary.histogram("train_loss", new[] { this.cost });
         }
 
-        public string Sample(Session session, dynamic chars, IReadOnlyDictionary<char, int> vocabulary, int num = 200, string prime = "The ", int samplingType = 1) {
-            dynamic state = this.CreateInitialState(session, vocabulary, prime);
+        public string Sample(Session session, IList<char> chars, IReadOnlyDictionary<char, int> vocabulary, int num = 200, string prime = "The ", int samplingType = 1) {
+            var state = this.CreateInitialState(session, vocabulary, prime);
 
             int WeightedPick(IEnumerable<float32> weights) {
                 double[] sums = weights.Aggregate((sum: 0.0, sums: new List<double>()),
                     (acc, value) => {
-                        acc.sum += (double)value; acc.sums.Add(acc.sum);
+                        acc.sum += (float)value; acc.sums.Add(acc.sum);
                         return (acc.sum, acc.sums);
                     }).sums.ToArray();
                 int index = Array.BinarySearch(sums, this.random.NextDouble() * sums.Last());
@@ -135,11 +135,11 @@
                     [this.initialState] = state,
                 };
                 var outputs = session.run(new dynamic[] { this.probs, this.finalState }, feed);
-                var probs = outputs[0];
+                ndarray<float> probs = outputs[0];
                 state = outputs[1];
-                ndarray computedProbabilities = probs[0];
+                var computedProbabilities = probs[0];
 
-                dynamic sample;
+                int sample;
                 switch (samplingType) {
                 case 1:
                 case 2 when chr == ' ':
@@ -147,7 +147,7 @@
                     break;
                 case 0:
                 case 2:
-                    sample = computedProbabilities.argmax();
+                    sample = (int)computedProbabilities.argmax();
                     break;
                 default:
                     throw new NotSupportedException();
@@ -160,7 +160,7 @@
             return ret;
         }
 
-        private dynamic CreateInitialState(Session session, IReadOnlyDictionary<char,int> vocabulary, string prime) {
+        dynamic CreateInitialState(Session session, IReadOnlyDictionary<char,int> vocabulary, string prime) {
             var state = session.run(this.rnn.zero_state(1, tf.float32));
             foreach (char chr in prime.Substring(0, prime.Length - 1)) {
                 var x = np.zeros<int>(new ulong[] { 1, 1 });
