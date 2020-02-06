@@ -11,6 +11,6 @@
 
   <ItemGroup>
     <PackageReference Include="FSharp.Interop.Dynamic" Version="5.0.1.268" />
-    <PackageReference Include="Gradient" Version="0.15.0-CI-20200115-009" />
+    <PackageReference Include="Gradient" Version="0.15.7-CI-20200205-005" />
   </ItemGroup>
 </Project>

@@ -121,7 +121,7 @@
             if (input.shape.ndims != 3)
                 throw new ArgumentException();
             Trace.Assert(nState % (int)hParams.n_head == 0);
-            if (past != null && past.shape.ndims != 5)
+            if (!(past is null) && past.shape.ndims != 5)
                 throw new ArgumentException();
 
             Tensor SplitHeads(Tensor x) =>
@@ -166,7 +166,7 @@
                 var v = qkv[2];
 
                 present = tf.stack(new[] { k, v }, axis: 1);
-                if (past != null)
+                if (!(past is null))
                 {
                     var pastKV = tf.unstack(past, axis: 1);
                     k = tf.concat(new[] { pastKV[0], k }, axis: -2);

@@ -128,7 +128,7 @@
             string ret = prime;
             char chr = prime.Last();
             for (int i = 0; i < num; i++) {
-                var x = np.zeros(new TensorShape(1, 1));
+                var x = np.zeros<int>(new ulong[] { 1, 1 });
                 x[0, 0] = vocabulary[chr];
                 var feed = new PythonDict<dynamic, dynamic> {
                     [this.inputData] = x,
@@ -163,7 +163,7 @@
         private dynamic CreateInitialState(Session session, IReadOnlyDictionary<char,int> vocabulary, string prime) {
             var state = session.run(this.rnn.zero_state(1, tf.float32));
             foreach (char chr in prime.Substring(0, prime.Length - 1)) {
-                var x = np.zeros(new TensorShape(1, 1));
+                var x = np.zeros<int>(new ulong[] { 1, 1 });
                 x[0, 0] = vocabulary[chr];
                 var feed = new PythonDict<dynamic, dynamic> {
                     [this.inputData] = x,

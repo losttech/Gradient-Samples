@@ -66,8 +66,8 @@
 
             var trainOp = new GradientDescentOptimizer(this.flags.InitialLearningRate).minimize(totalLoss);
 
-            var expectedTrainOut = trainOut.reshape((trainOut.Length, 1));
-            var expectedTestOut = testOut.reshape((testOut.Length, 1));
+            var expectedTrainOut = trainOut.reshape(new int[] { trainOut.Length, 1 });
+            var expectedTestOut = testOut.reshape(new int[] { testOut.Length, 1 });
 
             new Session().UseSelf(sess =>
             {
