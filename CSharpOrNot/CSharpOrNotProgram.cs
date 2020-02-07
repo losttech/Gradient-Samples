@@ -11,9 +11,9 @@
     static class CSharpOrNotProgram {
         public static int Main(string[] args) {
             GradientSetup.OptInToUsageDataCollection();
-            GradientSetup.UseEnvironmentFromVariable();
+            GradientEngine.UseEnvironmentFromVariable();
 
-            dynamic config = config_pb2.ConfigProto();
+            dynamic config = config_pb2.ConfigProto.CreateInstance();
             config.gpu_options.allow_growth = true;
             tf.keras.backend.set_session(Session.NewDyn(config: config));
 

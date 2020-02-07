@@ -21,24 +21,24 @@
             Tensor TopK()
             {
                 var valuesIndices = tf.nn.top_k_dyn(logits, k: topK);
-                var values = valuesIndices.Item1;
-                var minValues = values[Range.All, -1, tf.newaxis];
-                return tf.where_dyn(((dynamic)logits).__lt__(minValues),
+                var values = valuesIndices[0];
+                Tensor minValues = values[Range.All, -1, tf.newaxis];
+                return tf.where(logits < minValues,
                     tf.ones_like(logits, dtype: logits.dtype) * -1e10,
                     logits);
             }
 
-            Tensor isTopKZero = tf.equal(topK, 0);
-            return tf.cond_dyn(isTopKZero,
-                PythonFunctionContainer.Of(() => logits),
-                PythonFunctionContainer.Of(TopK));
+            Tensor isTopKZero = tf.equal_dyn(topK, 0);
+            return tf.cond(isTopKZero,
+                true_fn: PythonFunctionContainer.Of(() => logits),
+                false_fn: PythonFunctionContainer.Of(TopK));
         }
 
         public static Tensor SampleSequence(HParams hParams, int length,
             string startToken = null, int? batchSize = null, dynamic context = null,
             float temperature = 1, int topK = 0)
         {
-            if (((startToken == null) ^ (context == null)) == false)
+            if (((startToken is null) ^ (context is null)) == false)
                 throw new ArgumentException($"Exactly one of {nameof(startToken)} or {nameof(context)} has to be specified");
 
             SortedDictionary<string, dynamic> Step(HParams @params, Tensor tokens, dynamic past = null)

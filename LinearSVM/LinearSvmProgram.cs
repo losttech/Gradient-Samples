@@ -24,8 +24,9 @@
         }
 
         static int Main(string[] args) {
+            Console.Title = "LinearSVM";
             GradientLog.OutputWriter = Console.Out;
-            GradientSetup.UseEnvironmentFromVariable();
+            GradientEngine.UseEnvironmentFromVariable();
 
             // required before using PythonEngine
             GradientSetup.EnsureInitialized();
@@ -65,8 +66,8 @@
 
             var trainOp = new GradientDescentOptimizer(this.flags.InitialLearningRate).minimize(totalLoss);
 
-            var expectedTrainOut = trainOut.reshape((trainOut.Length, 1));
-            var expectedTestOut = testOut.reshape((testOut.Length, 1));
+            var expectedTrainOut = trainOut.reshape(new int[] { trainOut.Length, 1 });
+            var expectedTestOut = testOut.reshape(new int[] { testOut.Length, 1 });
 
             new Session().UseSelf(sess =>
             {
@@ -74,7 +75,7 @@
                 sess.run(init);
                 for(int step = 0; step < this.flags.StepCount; step++)
                 {
-                    (numpy.ndarray @in, numpy.ndarray @out) = NextBatch(trainIn, trainOut, sampleCount: this.flags.BatchSize);
+                    (numpy.ndarray @in, numpy.ndarray @out) = this.NextBatch(trainIn, trainOut, sampleCount: this.flags.BatchSize);
                     var feed = new PythonDict<object, object> {
                         [inPlace] = @in,
                         [outPlace] = @out,
@@ -129,7 +130,7 @@
 
             numpy.ndarray inputBatch = inputData[indexes];
             numpy.ndarray outputBatch = np.reshape(targetData[indexes], (sampleCount.Value, 1));
-            if (outputBatch == null)
+            if (outputBatch is null)
                 throw new InvalidOperationException();
             return (inputBatch, outputBatch);
         }

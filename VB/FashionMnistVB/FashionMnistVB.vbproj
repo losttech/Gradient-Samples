@@ -3,11 +3,11 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <RootNamespace>Gradient.Samples</RootNamespace>
-    <TargetFramework>netcoreapp2.0</TargetFramework>
+    <TargetFramework>netcoreapp2.1</TargetFramework>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Gradient" Version="0.1.10-tech-preview6.4" />
+    <PackageReference Include="Gradient" Version="0.15.7" />
   </ItemGroup>
 
 </Project>

@@ -17,8 +17,9 @@
         const string CharsVocabularyFileName = "chars_vocab";
 
         static int Main(string[] args) {
+            Console.Title = "CharRNN";
             GradientLog.OutputWriter = Console.Out;
-            GradientSetup.UseEnvironmentFromVariable();
+            GradientEngine.UseEnvironmentFromVariable();
 
             // ported from https://github.com/sherjilozair/char-rnn-tensorflow
             return Parser.Default.ParseArguments<CharRNNTrainingParameters, CharRNNSamplingParameters>(args)
@@ -42,7 +43,7 @@
                 tf.global_variables_initializer().run();
                 var saver = new Saver(tf.global_variables());
                 var checkpoint = tf.train.get_checkpoint_state(args.saveDir);
-                if (checkpoint?.model_checkpoint_path != null) {
+                if (!(checkpoint?.model_checkpoint_path is null)) {
                     saver.restore(session, checkpoint.model_checkpoint_path);
                     Console.WriteLine(model.Sample(session, chars, vocabulary, prime: prime, num: args.count));
                 }
@@ -80,10 +81,10 @@
                 var writer = new FileWriter(Path.Combine(args.logDir, DateTime.Now.ToString("s").Replace(':', '-')));
                 writer.add_graph(session.graph);
 
-                session.run(new dynamic[] { tf.global_variables_initializer() });
+                session.run(tf.global_variables_initializer());
                 var globals = tf.global_variables();
                 var saver = new Saver(globals);
-                if (checkpoint != null)
+                if (!(checkpoint is null))
                     saver.restore(session, checkpoint);
 
                 int totalNumberOfBatches = args.epochs * dataLoader.batchCount;

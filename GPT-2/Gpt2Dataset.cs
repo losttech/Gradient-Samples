@@ -20,7 +20,7 @@
         }
 
         internal static List<ndarray> LoadDataset(Gpt2Encoder encoder, List<string> fileNames) {
-            if (encoder == null) throw new ArgumentNullException(nameof(encoder));
+            if (encoder is null) throw new ArgumentNullException(nameof(encoder));
 
             var tokenChunks = new List<ndarray>();
             foreach (string file in fileNames) {

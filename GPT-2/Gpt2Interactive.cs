@@ -76,12 +76,12 @@
                     var contextTokens = encoder.Encode(text);
                     int generated = 0;
                     foreach (var _ in Enumerable.Range(0, sampleCount / batchSize)) {
-                        var @out = sess.run(output, feed_dict: new PythonDict<object, object> {
+                        ndarray<int> @out = sess.run(output, feed_dict: new PythonDict<object, object> {
                             [context] = Enumerable.Repeat(contextTokens, batchSize),
                         })[Range.All, Range.StartAt(contextTokens.Count)];
                         foreach (int i in Enumerable.Range(0, batchSize)) {
                             generated++;
-                            ndarray part = @out[i];
+                            var part = (ndarray<int>)@out[i];
                             text = encoder.Decode(part);
                             Console.WriteLine($"{Delimiter} SAMPLE {generated} {Delimiter}");
                             Console.WriteLine(text);

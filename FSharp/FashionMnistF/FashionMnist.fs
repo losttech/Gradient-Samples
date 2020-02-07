@@ -1,19 +1,20 @@
 ﻿open System
+open System.Collections.Generic
 open FSharp.Interop.Dynamic
 open FSharp.Interop.Dynamic.Operators
 
 open Gradient
+open Gradient.BuiltIns
 open numpy
 open tensorflow
 open tensorflow.keras
 open tensorflow.keras.layers
 open tensorflow.keras.optimizers
-open SharPy.Runtime
 
 [<EntryPoint>]
 let main argv =
     GradientSetup.OptInToUsageDataCollection()
-    GradientSetup.UseEnvironmentFromVariable() |> ignore
+    GradientEngine.UseEnvironmentFromVariable() |> ignore
 
     GradientLog.OutputWriter <- Console.Out
 
@@ -32,14 +33,14 @@ let main argv =
     |])
 
     model.compile(
-        optimizer = Adam(),
+        optimizer = ImplicitContainer<obj>(Adam()),
         loss = tf.keras.losses.sparse_categorical_crossentropy_fn,
-        metrics = ["accuracy"])
+        metrics = Seq.cast<obj> ["accuracy"])
 
     model.fit(trainImages, trainLabels, epochs = 5) |> ignore
 
     let evalResult = model.evaluate(testImages, testLabels)
-    let accuracy = Core.Operators.float (Dyn.getIndexer [1] evalResult : numpy.float64)
+    let accuracy = Core.Operators.float32 (Dyn.getIndexer[1] evalResult  : numpy.float32)
     printfn "Test accuracy: %f" accuracy
 
     model.summary()

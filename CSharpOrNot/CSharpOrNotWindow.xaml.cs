@@ -137,7 +137,12 @@
                         Path.GetDirectoryName(modelFile),
                         Path.GetFileNameWithoutExtension(modelFile));
 
-                this.model.load_weights(modelFile);
+                try {
+                    this.model.load_weights(modelFile);
+                }catch(Python.Runtime.PythonException e) {
+                    this.Title = this.codeDisplay.Text = e.Message;
+                    continue;
+                }
                 this.model.trainable = false;
                 this.loaded = true;
                 this.Title = modelFile;

@@ -53,8 +53,8 @@
         };
 
         public static ndarray<float> GreyscaleImageBytesToNumPy(byte[] inputs, int imageCount, int width, int height)
-            => (dynamic)inputs.Select(b => (float)b).ToArray().NumPyCopy()
-                .reshape(new[] { imageCount, height, width, 1 }) / 255.0f;
+            => (ndarray<float>)(inputs.Select(b => (float)b).ToArray().ToNumPyArray()
+                .reshape(new[] { imageCount, height, width, 1 }) / 255.0f);
 
         public static string[] ReadCode(string filePath)
             => File.ReadAllLines(filePath)

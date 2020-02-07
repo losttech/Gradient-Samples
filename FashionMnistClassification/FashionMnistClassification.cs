@@ -12,7 +12,7 @@
         static void Main() {
             Console.Title = nameof(FashionMnistClassification);
             GradientLog.OutputWriter = Console.Out;
-            GradientSetup.UseEnvironmentFromVariable();
+            GradientEngine.UseEnvironmentFromVariable();
 
             // requires Internet connection
             (dynamic train, dynamic test) = tf.keras.datasets.fashion_mnist.load_data();

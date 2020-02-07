@@ -33,7 +33,7 @@
 
         static Tensor Softmax(Tensor input, int axis = -1)
         {
-            var negative = input - tf.reduce_max(input, axis: axis, keepdims: true);
+            var negative = input - tf.reduce_max(input, axis: new[] { axis }, keepdims: true);
             var exp = tf.exp_dyn(negative);
             return exp / tf.reduce_sum(exp, axis: axis, keepdims: true);
         }
@@ -118,10 +118,11 @@
 
         static ValueTuple<Tensor, Tensor> Attention(Tensor input, object scope, int nState, Tensor past = null, dynamic hParams = null)
         {
-            Trace.Assert(input.shape.ndims == 3);
+            if (input.shape.ndims != 3)
+                throw new ArgumentException();
             Trace.Assert(nState % (int)hParams.n_head == 0);
-            if (past != null)
-                Trace.Assert(past.shape.ndims == 5);
+            if (!(past is null) && past.shape.ndims != 5)
+                throw new ArgumentException();
 
             Tensor SplitHeads(Tensor x) =>
                 // From [batch, sequence, features] to [batch, heads, sequence, features]
@@ -165,7 +166,7 @@
                 var v = qkv[2];
 
                 present = tf.stack(new[] { k, v }, axis: 1);
-                if (past != null)
+                if (!(past is null))
                 {
                     var pastKV = tf.unstack(past, axis: 1);
                     k = tf.concat(new[] { pastKV[0], k }, axis: -2);
@@ -252,17 +253,17 @@
             new variable_scope(scope, reuse: reuse).Use(_ =>
             {
                 dynamic[] batchSeq = ShapeList(input);
-                dynamic batch = batchSeq[0];
+                int batch = batchSeq[0];
                 dynamic sequence = batchSeq[1];
 
                 var wpe = tf.get_variable("wpe", new TensorShape((int)hParams.n_ctx, (int)hParams.n_embd), initializer: new random_normal_initializer(stddev: 0.01));
                 var wte = tf.get_variable("wte", new TensorShape((int)hParams.n_vocab, (int)hParams.n_embd), initializer: new random_normal_initializer(stddev: 0.02));
 
-                Tensor pastLen = past == null ? tf.constant(0) : tf.shape(past)[-2];
+                Tensor pastLen = past is null ? tf.constant(0) : tf.shape(past)[-2];
                 var h = tf.gather_dyn(wte, input) + tf.gather_dyn(wpe, PositionsFor(input, pastLen));
 
                 var presents = new List<object>();
-                var pasts = past != null
+                var pasts = !(past is null)
                     ? tf.unstack(past, axis: 1)
                     : Enumerable.Repeat<object>(null, (int)hParams.n_layer);
 

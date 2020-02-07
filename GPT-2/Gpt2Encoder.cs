@@ -156,7 +156,7 @@ namespace Gradient.Samples.GPT2
             return bpeTokens;
         }
 
-        public string Decode(ndarray tokens)
+        public string Decode(ndarray<int> tokens)
         {
             string[] tokenStrings = tokens.Cast<object>().Select(t => t.ToString()).ToArray();
             byte[] bytes = tokenStrings.SelectMany(token => this.decoder[token].Select(@char => this.byteDecoder[@char]))

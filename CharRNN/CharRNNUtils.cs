@@ -72,8 +72,8 @@
             _ArrayLike ydata = np.copy(this.tensor);
             ydata[..^1] = xdata[1..];
             ydata[^0] = xdata[0];
-            this.x_batches = np.split((ndarray)xdata.reshape((this.batchSize, -1)), this.batchCount, 1);
-            this.y_batches = np.split((ndarray)ydata.reshape((this.batchSize, -1)), this.batchCount, 1);
+            this.x_batches = np.split((ndarray)xdata.reshape(new int[] { this.batchSize, -1 }), this.batchCount, 1);
+            this.y_batches = np.split((ndarray)ydata.reshape(new int[] { this.batchSize, -1 }), this.batchCount, 1);
         }
         public ValueTuple<dynamic, dynamic> NextBatch() {
             var x = this.x_batches[this.pointer];

@@ -16,7 +16,7 @@
 
         static void Main() {
             GradientLog.OutputWriter = Console.Out;
-            GradientSetup.UseEnvironmentFromVariable();
+            GradientEngine.UseEnvironmentFromVariable();
 
             var input = tf.placeholder(tf.float32, new TensorShape(null, 1), name: "x");
             var output = tf.placeholder(tf.float32, new TensorShape(null, 1), name: "y");
@@ -89,8 +89,8 @@
             }
 
             return (
-                (ndarray)inputs.ToNumPyArray().reshape((inputs.Count, 1)),
-                (ndarray)outputs.ToNumPyArray().reshape((outputs.Count, 1)));
+                (ndarray)inputs.ToNumPyArray().reshape(new[] { inputs.Count, 1 }),
+                (ndarray)outputs.ToNumPyArray().reshape(new[] { outputs.Count, 1 }));
         }
     }
 }
