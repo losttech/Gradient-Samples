@@ -26,7 +26,7 @@
             IGraphNodeBase result = inputs;
 
             var batchNormExtraArgs = new Dictionary<string, object>();
-            if (training != null)
+            if (!(training is null))
                 batchNormExtraArgs["training"] = training;
 
             for (int part = 0; part < PartCount; part++) {

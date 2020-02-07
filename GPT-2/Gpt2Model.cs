@@ -253,17 +253,17 @@
             new variable_scope(scope, reuse: reuse).Use(_ =>
             {
                 dynamic[] batchSeq = ShapeList(input);
-                dynamic batch = batchSeq[0];
+                int batch = batchSeq[0];
                 dynamic sequence = batchSeq[1];
 
                 var wpe = tf.get_variable("wpe", new TensorShape((int)hParams.n_ctx, (int)hParams.n_embd), initializer: new random_normal_initializer(stddev: 0.01));
                 var wte = tf.get_variable("wte", new TensorShape((int)hParams.n_vocab, (int)hParams.n_embd), initializer: new random_normal_initializer(stddev: 0.02));
 
-                Tensor pastLen = past == null ? tf.constant(0) : tf.shape(past)[-2];
+                Tensor pastLen = past is null ? tf.constant(0) : tf.shape(past)[-2];
                 var h = tf.gather_dyn(wte, input) + tf.gather_dyn(wpe, PositionsFor(input, pastLen));
 
                 var presents = new List<object>();
-                var pasts = past != null
+                var pasts = !(past is null)
                     ? tf.unstack(past, axis: 1)
                     : Enumerable.Repeat<object>(null, (int)hParams.n_layer);
 

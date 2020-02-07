@@ -48,7 +48,7 @@ namespace Gradient.Samples.GPT2 {
         public int SampleNum { get; set; } = 1;
 
         public void Train(string checkpoint, string run, int? counter, dynamic sessionConfig = null, CancellationToken cancellation = default) {
-            Session sess = sessionConfig == null
+            Session sess = sessionConfig is null
                 ? Session.NewDyn(config: sessionConfig)
                 : new Session();
             sess.UseSelf(session => {
@@ -87,7 +87,7 @@ namespace Gradient.Samples.GPT2 {
                 Console.WriteLine($"Dataset has {sampler.TokenCount} tokens");
 
                 string counterFile = Path.Combine(Gpt2Checkpoints.CheckpointDir, run, "counter");
-                if (counter == null && File.Exists(counterFile))
+                if (counter is null && File.Exists(counterFile))
                     counter = int.Parse(File.ReadAllText(counterFile), CultureInfo.InvariantCulture) + 1;
                 counter = counter ?? 1;
 
@@ -109,11 +109,11 @@ namespace Gradient.Samples.GPT2 {
                     int index = 0;
                     string text = null;
                     while (index < this.SampleNum) {
-                        var @out = session.run(sample, feed_dict: new PythonDict<object, object> {
+                        ndarray<int> @out = session.run(sample, feed_dict: new PythonDict<object, object> {
                             [context] = Enumerable.Repeat(contextTokens, this.batchSize),
                         });
                         foreach (int i in Enumerable.Range(0, Math.Min(this.SampleNum - index, this.batchSize))) {
-                            text = this.encoder.Decode(@out[i]);
+                            text = this.encoder.Decode((ndarray<int>)@out[i]);
                             text = Invariant($"======== SAMPLE {index + 1} ========\n{text}\n");
                             allText.Add(text);
                             index++;
@@ -142,7 +142,7 @@ namespace Gradient.Samples.GPT2 {
                     var placeholderValues = new PythonDict<object, object> {
                         [context] = batch,
                     };
-                    var tuple = session.run_dyn((optimizer, loss), feed_dict: placeholderValues);
+                    var tuple = session.run((optimizer, loss), feed_dict: placeholderValues);
 
                     var lv = tuple.Item2;
 

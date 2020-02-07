@@ -43,7 +43,7 @@
                 tf.global_variables_initializer().run();
                 var saver = new Saver(tf.global_variables());
                 var checkpoint = tf.train.get_checkpoint_state(args.saveDir);
-                if (checkpoint?.model_checkpoint_path != null) {
+                if (!(checkpoint?.model_checkpoint_path is null)) {
                     saver.restore(session, checkpoint.model_checkpoint_path);
                     Console.WriteLine(model.Sample(session, chars, vocabulary, prime: prime, num: args.count));
                 }
@@ -84,7 +84,7 @@
                 session.run(new dynamic[] { tensorflow.tf.global_variables_initializer() });
                 var globals = tf.global_variables();
                 var saver = new Saver(globals);
-                if (checkpoint != null)
+                if (!(checkpoint is null))
                     saver.restore(session, checkpoint);
 
                 int totalNumberOfBatches = args.epochs * dataLoader.batchCount;

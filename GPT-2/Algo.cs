@@ -2,7 +2,7 @@
     using System;
     static class Algo {
         public static int BinarySearch(Func<int, bool> predicate, int lo, int hi) {
-            if (predicate == null)
+            if (predicate is null)
                 throw new ArgumentNullException(nameof(predicate));
             if (predicate(lo) || !predicate(hi))
                 throw new ArgumentException();

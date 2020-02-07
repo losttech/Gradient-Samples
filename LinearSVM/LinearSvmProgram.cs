@@ -130,7 +130,7 @@
 
             numpy.ndarray inputBatch = inputData[indexes];
             numpy.ndarray outputBatch = np.reshape(targetData[indexes], (sampleCount.Value, 1));
-            if (outputBatch == null)
+            if (outputBatch is null)
                 throw new InvalidOperationException();
             return (inputBatch, outputBatch);
         }
