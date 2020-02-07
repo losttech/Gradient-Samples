@@ -7,7 +7,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Gradient" Version="0.15.7-CI-20200206-006" />
+    <PackageReference Include="Gradient" Version="0.15.7" />
     <PackageReference Include="ManyConsole.CommandLineUtils" Version="1.0.3-alpha" />
   </ItemGroup>
 
