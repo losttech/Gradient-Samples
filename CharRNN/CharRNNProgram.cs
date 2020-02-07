@@ -81,7 +81,7 @@
                 var writer = new FileWriter(Path.Combine(args.logDir, DateTime.Now.ToString("s").Replace(':', '-')));
                 writer.add_graph(session.graph);
 
-                session.run(new dynamic[] { tensorflow.tf.global_variables_initializer() });
+                session.run(tf.global_variables_initializer());
                 var globals = tf.global_variables();
                 var saver = new Saver(globals);
                 if (!(checkpoint is null))

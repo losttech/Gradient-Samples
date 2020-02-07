@@ -7,25 +7,28 @@
     using tensorflow.keras;
     using tensorflow.keras.layers;
 
-    class ResNetBlock: Model {
+    public class ResNetBlock: Model {
         const int PartCount = 3;
-        readonly IList<Conv2D> convs = new List<Conv2D>();
-        readonly IList<BatchNormalization> batchNorms = new List<BatchNormalization>();
+        readonly PythonList<Conv2D> convs = new PythonList<Conv2D>();
+        readonly PythonList<BatchNormalization> batchNorms = new PythonList<BatchNormalization>();
+        readonly PythonFunctionContainer activation;
         readonly int outputChannels;
-        public ResNetBlock(int kernelSize, int[] filters) {
+        public ResNetBlock(int kernelSize, int[] filters, PythonFunctionContainer activation = null) {
+            this.activation = activation ?? tf.keras.activations.relu_fn;
             for (int part = 0; part < PartCount; part++) {
                 this.convs.Add(this.Track(part == 1
-                    ? Conv2D.NewDyn(filters[part], kernel_size: kernelSize, padding: "same")
+                    ? Conv2D.NewDyn(filters: filters[part], kernel_size: kernelSize, padding: "same")
                     : Conv2D.NewDyn(filters[part], kernel_size: (1, 1))));
                 this.batchNorms.Add(this.Track(new BatchNormalization()));
             }
-            this.outputChannels = filters.Last();
+
+            this.outputChannels = filters[PartCount - 1];
         }
 
         object CallImpl(IGraphNodeBase inputs, dynamic training) {
             IGraphNodeBase result = inputs;
 
-            var batchNormExtraArgs = new Dictionary<string, object>();
+            var batchNormExtraArgs = new PythonDict<string, object>();
             if (!(training is null))
                 batchNormExtraArgs["training"] = training;
 
@@ -33,12 +36,12 @@
                 result = this.convs[part].__call__(result);
                 result = this.batchNorms[part].__call__(result, kwargs: batchNormExtraArgs);
                 if (part + 1 != PartCount)
-                    result = tf.nn.relu(result);
+                    result = ((dynamic)this.activation)(result);
             }
 
             result = (Tensor)result + inputs;
 
-            return tf.nn.relu(result);
+            return ((dynamic)this.activation)(result);
         }
 
         public override TensorShape compute_output_shape(TensorShape input_shape) {
@@ -52,14 +55,15 @@
         }
 
         public override dynamic call(IEnumerable<IGraphNodeBase> inputs, ImplicitContainer<IGraphNodeBase> training, IGraphNodeBase mask) {
-            return this.CallImpl(inputs.Single(), training);
+            return this.CallImpl((Tensor)inputs.Single(), training);
         }
-        public override object call(IEnumerable<IGraphNodeBase> inputs, bool training, IGraphNodeBase mask = null) {
-            return this.CallImpl(inputs.Single(), training);
+
+        public override object call(IGraphNodeBase inputs, bool training, IGraphNodeBase mask = null) {
+            return this.CallImpl((Tensor)inputs, training);
         }
 
         public override dynamic call(IGraphNodeBase inputs, ImplicitContainer<IGraphNodeBase> training = null, IEnumerable<IGraphNodeBase> mask = null) {
-            return this.CallImpl(inputs, training?.Value);
+            return this.CallImpl((Tensor)inputs, training?.Value);
         }
     }
 }

@@ -1,6 +1,8 @@
 ﻿namespace Gradient.Samples {
     using System;
+    using System.Collections.Generic;
     using System.Linq;
+    using numpy;
     using SharPy.Runtime;
     using tensorflow;
     using tensorflow.train;
@@ -72,21 +74,23 @@
             });
         }
 
-        static (dynamic, dynamic) GenerateTestValues() {
+        static (ndarray, ndarray) GenerateTestValues() {
             double Fun(double input) => Math.Sin(input);
 
-            var inputs = new PythonList<PythonList<double>>();
-            var outputs = new PythonList<PythonList<double>>();
+            var inputs = new List<double>();
+            var outputs = new List<double>();
 
             var random = new Random();
-            foreach(var _ in Enumerable.Range(0, testSize)) {
+            foreach(int _ in Enumerable.Range(0, testSize)) {
                 double x = x0 + (x1 - x0) * random.NextDouble();
                 double y = Fun(x);
-                inputs.Add(new PythonList<double> { x });
-                outputs.Add(new PythonList<double> { y });
+                inputs.Add(x);
+                outputs.Add(y);
             }
 
-            return (inputs, outputs);
+            return (
+                (ndarray)inputs.ToNumPyArray().reshape(new[] { inputs.Count, 1 }),
+                (ndarray)outputs.ToNumPyArray().reshape(new[] { outputs.Count, 1 }));
         }
     }
 }

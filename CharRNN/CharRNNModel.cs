@@ -82,8 +82,8 @@
                 loop_function: training ? null : PythonFunctionContainer.Of(new Func<dynamic, dynamic, dynamic>(Loop)), scope: "rnnlm");
             IList<Tensor> outputs = decoder.Item1;
             var lastState = (seq2seqState)decoder.Item2;
-            dynamic contatenatedOutputs = tf.concat(outputs, 1);
-            var output = tensorflow.tf.reshape(contatenatedOutputs, new[] { -1, parameters.RNNSize });
+            dynamic concatenatedOutputs = tf.concat(outputs, 1);
+            var output = tf.reshape(concatenatedOutputs, new[] { -1, parameters.RNNSize });
 
             this.logits = tf.matmul(output, softmax_W) + softmax_b;
             this.probs = tf.nn.softmax_dyn(new[] { this.logits });

@@ -37,5 +37,7 @@ Module Program
         Dim evaluationResult = model.evaluate(testImages, testLabels)
         Dim accuracy = evaluationResult(1)
         Console.WriteLine($"Test accuracy: {accuracy}")
+
+        model.summary()
     End Sub
 End Module

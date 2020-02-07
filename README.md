@@ -22,12 +22,19 @@ See also:
 > MARIANA:
 > He shall speak not reverbering injurance.
 
+**CSharpOrNot** - a mini-ResNet convolutional network, that guesses programming language,
+given a rectangular text block from a code file. Has a cross-platform UI demo.
+Get pretrained model here: https://github.com/losttech/Gradient-Samples/releases/tag/csharp-or-not%2Fv1
+
 **GPT-2** - latest English [language model from OpenAI](https://blog.openai.com/better-language-models/)
 (smaller version, pretrained). Added fine-tuning from https://github.com/nshepperd/gpt-2.
 
 **FashionMnistClassification** - standard TensorFlow example, that classifies small pictures of clothes.
 
 **LinearSVM** - incomplete port due to a bug with tf.flags
+
+**ResNetBlock** - same as FashionMnistClassification above, but shows `Model` subclassing
+to implement ResNet block.
 
 **SimpleApproximation** - uses a simple 1 hidden layer neural network to approximate an arbitrary function.
 
