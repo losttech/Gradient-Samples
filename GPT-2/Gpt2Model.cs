@@ -107,12 +107,12 @@
         /// 1's in the lower triangle, counting from the lower right corner.
         /// Same as tf.matrix_band_part(tf.ones([nd, ns]), -1, ns-nd), but doesn't produce garbage on TPUs.
         /// </summary>
-        static Tensor AttentionMask(dynamic nd, dynamic ns, DType dtype = null)
+        static Tensor AttentionMask(object nd, dynamic ns, DType dtype = null)
         {
             // have to use range_dyn, otherwise Tensors i and j end up being tf.float32
             var i = tf.range_dyn(nd)[Range.All, (Range?)null];
             var j = tf.range_dyn(ns);
-            var m = i.__ge__(j - ns + nd);
+            var m = i.__ge__(j - ns + ToIntTensor(nd));
             return tf.cast(m, dtype);
         }
 
@@ -280,13 +280,16 @@
                 h = Norm(h, "ln_f");
 
                 // Language model loss.  Do tokens <n predict token n?
-                var hFlat = tf.reshape_dyn(h, new [] { sequence * batch , (int)hParams.n_embd });
+                var hFlat = tf.reshape_dyn(h, new [] { ToIntTensor(sequence) * tf.constant(batch, tf.int32), (int)hParams.n_embd });
                 Tensor logits = tf.matmul(hFlat, wte, transpose_b: true);
                 logits = tf.reshape_dyn(logits, new [] { batch, sequence, (int)hParams.n_vocab });
                 result["logits"] = logits;
             });
             return result;
         }
+
+        static Tensor ToIntTensor(object obj)
+            => obj is int num ? tf.constant(num, tf.int32) : (Tensor)obj;
 
         public static HParams LoadHParams(string modelName) {
             var hParams = DefaultHParams;
