@@ -1,8 +1,9 @@
-﻿namespace Gradient.Samples {
+﻿namespace LostTech.Gradient.Samples {
     using System.Collections.Generic;
     using System.Linq;
-    using Gradient.BuiltIns;
-    using Gradient.ManualWrappers;
+    using LostTech.Gradient.BuiltIns;
+    using LostTech.Gradient.ManualWrappers;
+
     using tensorflow;
     using tensorflow.keras;
     using tensorflow.keras.layers;
@@ -13,7 +14,7 @@
         readonly PythonList<BatchNormalization> batchNorms = new PythonList<BatchNormalization>();
         readonly PythonFunctionContainer activation;
         readonly int outputChannels;
-        public ResNetBlock(int kernelSize, int[] filters, PythonFunctionContainer activation = null) {
+        public ResNetBlock(int kernelSize, int[] filters, PythonFunctionContainer? activation = null) {
             this.activation = activation ?? tf.keras.activations.relu_fn;
             for (int part = 0; part < PartCount; part++) {
                 this.convs.Add(this.Track(part == 1
@@ -25,7 +26,7 @@
             this.outputChannels = filters[PartCount - 1];
         }
 
-        object CallImpl(IGraphNodeBase inputs, dynamic training) {
+        object CallImpl(IGraphNodeBase inputs, dynamic? training) {
             IGraphNodeBase result = inputs;
 
             var batchNormExtraArgs = new PythonDict<string, object>();
@@ -54,15 +55,15 @@
             return input_shape;
         }
 
-        public override dynamic call(IEnumerable<IGraphNodeBase> inputs, ImplicitContainer<IGraphNodeBase> training, IGraphNodeBase mask) {
+        public override dynamic call(IEnumerable<IGraphNodeBase> inputs, ImplicitContainer<IGraphNodeBase>? training, IGraphNodeBase? mask) {
             return this.CallImpl((Tensor)inputs.Single(), training);
         }
 
-        public override object call(IGraphNodeBase inputs, bool training, IGraphNodeBase mask = null) {
+        public override object call(IGraphNodeBase inputs, bool training, IGraphNodeBase? mask = null) {
             return this.CallImpl((Tensor)inputs, training);
         }
 
-        public override dynamic call(IGraphNodeBase inputs, ImplicitContainer<IGraphNodeBase> training = null, IEnumerable<IGraphNodeBase> mask = null) {
+        public override dynamic call(IGraphNodeBase inputs, ImplicitContainer<IGraphNodeBase>? training = null, IEnumerable<IGraphNodeBase>? mask = null) {
             return this.CallImpl((Tensor)inputs, training?.Value);
         }
     }
