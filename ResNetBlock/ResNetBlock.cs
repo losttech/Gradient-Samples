@@ -1,7 +1,6 @@
 ﻿namespace LostTech.Gradient.Samples {
     using System.Collections.Generic;
     using System.Linq;
-    using LostTech.Gradient.BuiltIns;
     using LostTech.Gradient.ManualWrappers;
 
     using tensorflow;
@@ -10,8 +9,8 @@
 
     public class ResNetBlock: Model {
         const int PartCount = 3;
-        readonly PythonList<Conv2D> convs = new PythonList<Conv2D>();
-        readonly PythonList<BatchNormalization> batchNorms = new PythonList<BatchNormalization>();
+        readonly List<Conv2D> convs = new List<Conv2D>();
+        readonly List<BatchNormalization> batchNorms = new List<BatchNormalization>();
         readonly PythonFunctionContainer activation;
         readonly int outputChannels;
         public ResNetBlock(int kernelSize, int[] filters, PythonFunctionContainer? activation = null) {
@@ -29,7 +28,7 @@
         object CallImpl(IGraphNodeBase inputs, dynamic? training) {
             IGraphNodeBase result = inputs;
 
-            var batchNormExtraArgs = new PythonDict<string, object>();
+            var batchNormExtraArgs = new Dictionary<string, object>();
             if (!(training is null))
                 batchNormExtraArgs["training"] = training;
 
@@ -37,12 +36,12 @@
                 result = this.convs[part].__call__(result);
                 result = this.batchNorms[part].__call__(result, kwargs: batchNormExtraArgs);
                 if (part + 1 != PartCount)
-                    result = ((dynamic)this.activation)(result);
+                    result = this.activation.Invoke(result);
             }
 
             result = (Tensor)result + inputs;
 
-            return ((dynamic)this.activation)(result);
+            return this.activation.Invoke(result);
         }
 
         public override TensorShape compute_output_shape(TensorShape input_shape) {
