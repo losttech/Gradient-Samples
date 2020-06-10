@@ -4,9 +4,10 @@
     using System.Diagnostics;
     using System.Dynamic;
     using System.Linq;
-    using Gradient;
-    using Gradient.ManualWrappers;
+    using LostTech.Gradient;
+    using LostTech.Gradient.ManualWrappers;
     using ManyConsole.CommandLineUtils;
+    using numpy;
     using Python.Runtime;
     using SharPy.Runtime;
     using tensorflow;
@@ -14,7 +15,6 @@
 
     class LinearSvmProgram {
         static readonly Random random = new Random();
-        static dynamic np;
 
         readonly LinearSvmCommand flags;
 
@@ -30,7 +30,6 @@
 
             // required before using PythonEngine
             GradientSetup.EnsureInitialized();
-            np = PythonEngine.ImportModule("numpy");
             return ConsoleCommandDispatcher.DispatchCommand(
                ConsoleCommandDispatcher.FindCommandsInSameAssemblyAs(typeof(LinearSvmProgram)),
                args, Console.Out);
@@ -51,10 +50,10 @@
                 .Select(l => (int)l == 0 ? 1 : -1)
                 .ToArray();
             int trainCount = expectedOutput.Length * 4 / 5;
-            var trainIn = numpy.np.array(((IEnumerable)input).Cast<dynamic>().Take(trainCount));
-            var trainOut = numpy.np.array(expectedOutput.Take(trainCount));
-            var testIn = numpy.np.array(((IEnumerable)input).Cast<dynamic>().Skip(trainCount));
-            var testOut = numpy.np.array(expectedOutput.Skip(trainCount));
+            var trainIn = np.array(((IEnumerable)input).Cast<dynamic>().Take(trainCount));
+            var trainOut = np.array(expectedOutput.Take(trainCount));
+            var testIn = np.array(((IEnumerable)input).Cast<dynamic>().Skip(trainCount));
+            var testOut = np.array(expectedOutput.Skip(trainCount));
 
             var inPlace = tf.placeholder(shape: new TensorShape(null, input.shape[1]), dtype: tf.float32);
             var outPlace = tf.placeholder(shape: new TensorShape(null, 1), dtype: tf.float32);
@@ -71,11 +70,11 @@
 
             new Session().UseSelf(sess =>
             {
-                var init = tensorflow.tf.global_variables_initializer();
+                var init = tf.global_variables_initializer();
                 sess.run(init);
                 for(int step = 0; step < this.flags.StepCount; step++)
                 {
-                    (numpy.ndarray @in, numpy.ndarray @out) = this.NextBatch(trainIn, trainOut, sampleCount: this.flags.BatchSize);
+                    (ndarray @in, ndarray @out) = this.NextBatch(trainIn, trainOut, sampleCount: this.flags.BatchSize);
                     var feed = new PythonDict<object, object> {
                         [inPlace] = @in,
                         [outPlace] = @out,
@@ -97,11 +96,6 @@
                     if ((step + 1) % 100 == 0)
                         Console.WriteLine($"Step{step}: test acc {testAcc}, train acc {trainAcc}");
                 }
-
-                //if (this.flags.IsEvaluation)
-                //{
-
-                //}
             });
 
             return 0;
@@ -121,15 +115,15 @@
             return accuracy;
         }
 
-        (numpy.ndarray, numpy.ndarray) NextBatch(dynamic inputData, dynamic targetData, int? sampleCount = null) {
-            sampleCount = sampleCount ?? this.flags.BatchSize;
+        (ndarray, ndarray) NextBatch(dynamic inputData, ndarray targetData, int? sampleCount = null) {
+            sampleCount ??= this.flags.BatchSize;
             int max = inputData.Length;
             var indexes = Enumerable.Range(0, sampleCount.Value)
                 .Select(_ => random.Next(max))
                 .ToArray();
 
-            numpy.ndarray inputBatch = inputData[indexes];
-            numpy.ndarray outputBatch = np.reshape(targetData[indexes], (sampleCount.Value, 1));
+            ndarray inputBatch = inputData[indexes];
+            var outputBatch = (ndarray)targetData[indexes].reshape((sampleCount.Value, 1).Items());
             if (outputBatch is null)
                 throw new InvalidOperationException();
             return (inputBatch, outputBatch);
