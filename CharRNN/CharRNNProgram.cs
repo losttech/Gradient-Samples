@@ -5,7 +5,7 @@
     using System.IO;
     using System.Linq;
     using CommandLine;
-    using Gradient;
+    using LostTech.Gradient;
     using Newtonsoft.Json;
     using SharPy.Runtime;
     using tensorflow;
@@ -95,7 +95,7 @@
                         tf.constant(args.learningRate * Math.Pow(args.decayRate, epoch)))
                     });
                     dataLoader.ResetBatchPointer();
-                    var state = session.run(model.initialState.Items().Cast<object>());
+                    var state = session.run(model.initialState.Items());
                     var stopwatch = Stopwatch.StartNew();
                     for (int batch = 0; batch < dataLoader.batchCount; batch++) {
                         stopwatch.Restart();

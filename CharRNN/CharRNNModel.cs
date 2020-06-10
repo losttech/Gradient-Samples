@@ -3,8 +3,8 @@
     using System.Collections.Generic;
     using System.Linq;
     using CommandLine;
-    using Gradient;
-    using Gradient.ManualWrappers;
+    using LostTech.Gradient;
+    using LostTech.Gradient.ManualWrappers;
     using SharPy.Runtime;
     using numpy;
     using tensorflow;
@@ -77,7 +77,7 @@
             }
             var decoder = tensorflow.contrib.legacy_seq2seq.legacy_seq2seq.rnn_decoder_dyn(
                 decoder_inputs: inputs,
-                initial_state: this.initialState.Items(),
+                initial_state: this.initialState,
                 cell: this.rnn,
                 loop_function: training ? null : PythonFunctionContainer.Of(new Func<dynamic, dynamic, dynamic>(Loop)), scope: "rnnlm");
             IList<Tensor> outputs = decoder.Item1;
@@ -101,8 +101,8 @@
             this.learningRate = new Variable(0.0, trainable: false);
 
             IEnumerable<Variable> tvars = tf.trainable_variables();
-            IEnumerable<object> grads = tf.gradients_dyn(this.cost, tvars);
-            grads = tf.clip_by_global_norm(grads.Cast<IGraphNodeBase>(), parameters.GradientClip).Item1;
+            IList<IGraphNodeBase> grads = tf.gradients_dyn(this.cost, tvars);
+            grads = tf.clip_by_global_norm(grads, parameters.GradientClip).Item1;
             AdamOptimizer optimizer = null;
             new name_scope("optimizer").UseSelf(_ => optimizer = AdamOptimizer.NewDyn(this.learningRate));
             this.trainOp = optimizer.apply_gradients(grads.Zip(tvars, (grad, @var) => (dynamic)(grad, @var)));
