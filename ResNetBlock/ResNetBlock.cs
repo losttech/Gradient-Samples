@@ -55,7 +55,7 @@
             return input_shape;
         }
 
-        public override dynamic call(IEnumerable<IGraphNodeBase> inputs, ImplicitContainer<IGraphNodeBase>? training, IGraphNodeBase? mask) {
+        public override dynamic call(IEnumerable<IGraphNodeBase> inputs, IGraphNodeBase? training, IGraphNodeBase? mask) {
             return this.CallImpl((Tensor)inputs.Single(), training);
         }
 
@@ -63,8 +63,8 @@
             return this.CallImpl((Tensor)inputs, training);
         }
 
-        public override dynamic call(IGraphNodeBase inputs, ImplicitContainer<IGraphNodeBase>? training = null, IEnumerable<IGraphNodeBase>? mask = null) {
-            return this.CallImpl((Tensor)inputs, training?.Value);
+        public override dynamic call(IGraphNodeBase inputs, IGraphNodeBase? training = null, IEnumerable<IGraphNodeBase>? mask = null) {
+            return this.CallImpl((Tensor)inputs, training);
         }
     }
 }
