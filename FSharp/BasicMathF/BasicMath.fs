@@ -7,12 +7,6 @@ open tensorflow.summary
 open tensorflow.core.protobuf.config_pb2
 open tensorflow.python.ops.gen_bitwise_ops
 
-// this is no longer needed in most scenarios with 1.15, but we left it for example
-let inline (!>) (x:^a) : ^b = ((^a or ^b) : (static member op_Implicit : ^a -> ^b) x)
-// F# does not use implicit conversions, when resolving an overload
-// so this has to be applied explicitly
-let inline implicit (x:^a): ImplicitContainer< ^a > = !> x
-
 [<EntryPoint>]
 let main argv =
     GradientSetup.OptInToUsageDataCollection()

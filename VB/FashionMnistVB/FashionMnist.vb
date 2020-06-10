@@ -1,6 +1,6 @@
 Imports System
-Imports Gradient
-Imports Gradient.BuiltIns
+Imports LostTech.Gradient
+Imports LostTech.Gradient.BuiltIns
 Imports tensorflow
 Imports tensorflow.keras
 Imports tensorflow.keras.layers
@@ -20,9 +20,8 @@ Module Program
         Dim testImages = test.Item1 / 255.0F
         Dim testLabels = test.Item2
 
-        Dim shapeArgs = New PythonDict(Of String, Object) From {{"input_shape", (28, 28)}}
         Dim model = New Sequential(New Layer() {
-            New Flatten(kwargs:=shapeArgs),
+            New Flatten(kwargs:=New With {.input_shape = (28, 28)}.AsKwArgs),
             New Dense(units:=128, activation:=tf.nn.leaky_relu_fn),
             New Dense(units:=10, activation:=tf.nn.softmax_fn)
         })

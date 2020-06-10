@@ -9,7 +9,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Gradient" Version="0.15.7.2" />
+    <PackageReference Include="Gradient" Version="1.15.0-CI-20200610-001" />
   </ItemGroup>
 
 </Project>
