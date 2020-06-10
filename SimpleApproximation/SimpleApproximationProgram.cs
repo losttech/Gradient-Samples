@@ -1,9 +1,8 @@
-﻿namespace Gradient.Samples {
+﻿namespace LostTech.Gradient.Samples {
     using System;
     using System.Collections.Generic;
     using System.Linq;
     using numpy;
-    using SharPy.Runtime;
     using tensorflow;
     using tensorflow.train;
 
@@ -34,44 +33,43 @@
             var training = new GradientDescentOptimizer(learning_rate: learningRate).minimize(cost);
 
             dynamic init = tf.global_variables_initializer();
+            var session = new Session();
+            using var _ = session.StartUsing();
+            session.run(init);
 
-            new Session().UseSelf(session => {
-                session.run(new[] { init });
+            foreach (int iteration in Enumerable.Range(0, iterations)) {
+                var (trainInputs, trainOutputs) = GenerateTestValues();
+                var iterationDataset = new Dictionary<dynamic, object> {
+                    [input] = trainInputs,
+                    [output] = trainOutputs,
+                };
+                session.run(training, feed_dict: iterationDataset);
 
-                foreach (int iteration in Enumerable.Range(0, iterations)) {
-                    var (trainInputs, trainOutputs) = GenerateTestValues();
-                    var iterationDataset = new PythonDict<dynamic, object> {
-                        [input] = trainInputs,
-                        [output] = trainOutputs,
-                    };
-                    session.run(new[] { training }, feed_dict: iterationDataset);
+                if (iteration % 100 == 99)
+                    Console.WriteLine($"cost = {session.run(cost, feed_dict: iterationDataset)}");
+            }
 
-                    if (iteration % 100 == 99)
-                        Console.WriteLine($"cost = {session.run(new[] { cost }, feed_dict: iterationDataset)}");
-                }
+            var (testInputs, testOutputs) = GenerateTestValues();
 
-                var (testInputs, testOutputs) = GenerateTestValues();
-
-                var testValues = session.run(new[] { model }, feed_dict: new PythonDict<dynamic, object> {
-                    [input] = testInputs,
-                });
-
-                new variable_scope("hidden", reuse: true).UseSelf(_ => {
-                    Variable w = tf.get_variable("kernel");
-                    Variable b = tf.get_variable("bias");
-                    Console.WriteLine("hidden:");
-                    Console.WriteLine($"kernel= {w.eval()}");
-                    Console.WriteLine($"bias  = {b.eval()}");
-                });
-
-                new variable_scope("output", reuse: true).UseSelf(_ => {
-                    Variable w = tf.get_variable("kernel");
-                    Variable b = tf.get_variable("bias");
-                    Console.WriteLine("hidden:");
-                    Console.WriteLine($"kernel= {w.eval()}");
-                    Console.WriteLine($"bias  = {b.eval()}");
-                });
+            var testValues = session.run(model, feed_dict: new Dictionary<object, object> {
+                [input] = testInputs,
             });
+
+            using (new variable_scope("hidden", reuse: true).StartUsing()) {
+                Variable w = tf.get_variable("kernel");
+                Variable b = tf.get_variable("bias");
+                Console.WriteLine("hidden:");
+                Console.WriteLine($"kernel= {w.eval()}");
+                Console.WriteLine($"bias  = {b.eval()}");
+            }
+
+            using (new variable_scope("output", reuse: true).StartUsing()) {
+                Variable w = tf.get_variable("kernel");
+                Variable b = tf.get_variable("bias");
+                Console.WriteLine("hidden:");
+                Console.WriteLine($"kernel= {w.eval()}");
+                Console.WriteLine($"bias  = {b.eval()}");
+            }
         }
 
         static (ndarray, ndarray) GenerateTestValues() {
