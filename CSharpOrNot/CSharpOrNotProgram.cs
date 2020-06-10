@@ -1,9 +1,9 @@
-﻿namespace Gradient.Samples {
+﻿namespace LostTech.Gradient.Samples {
     using System;
     using System.Linq;
     using Avalonia;
     using Avalonia.Logging.Serilog;
-    using Gradient;
+    using LostTech.Gradient;
     using ManyConsole.CommandLineUtils;
     using tensorflow;
     using tensorflow.core.protobuf.config_pb2;

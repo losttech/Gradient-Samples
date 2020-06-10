@@ -1,4 +1,4 @@
-﻿namespace Gradient.Samples {
+﻿namespace LostTech.Gradient.Samples {
     using System;
     using System.Drawing.Imaging;
     using System.IO;
@@ -9,12 +9,13 @@
     using Avalonia.Interactivity;
     using Avalonia.Markup.Xaml;
     using Avalonia.Media;
-    using Gradient;
+    using LostTech.Gradient;
+    using LostTech.Gradient.Exceptions;
     using MoreLinq;
     using numpy;
     using tensorflow;
     using tensorflow.keras;
-    using static Gradient.Samples.CSharpOrNot;
+    using static LostTech.Gradient.Samples.CSharpOrNot;
     using Image = Avalonia.Controls.Image;
     using Point = System.Drawing.Point;
     using Bitmap = System.Drawing.Bitmap;
@@ -139,7 +140,7 @@
 
                 try {
                     this.model.load_weights(modelFile);
-                }catch(Python.Runtime.PythonException e) {
+                } catch(ValueError e) {
                     this.Title = this.codeDisplay.Text = e.Message;
                     continue;
                 }
