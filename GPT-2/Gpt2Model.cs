@@ -1,4 +1,4 @@
-﻿namespace Gradient.Samples.GPT2
+﻿namespace LostTech.Gradient.Samples.GPT2
 {
     using System;
     using System.Collections;
@@ -6,8 +6,9 @@
     using System.Diagnostics;
     using System.IO;
     using System.Linq;
+
+    using LostTech.Gradient.BuiltIns;
     using Newtonsoft.Json;
-    using SharPy.Runtime;
     using tensorflow;
     using tensorflow.contrib.training;
 
@@ -24,11 +25,14 @@
         /// <summary>
         /// Deal with dynamic shape in tensorflow cleanly.
         /// </summary>
-        static dynamic[] ShapeList(ITensor tensor)
+        static PythonList<dynamic> ShapeList(ITensor tensor)
         {
             IEnumerable<int?> @static = tensor.shape.as_list();
             dynamic dynamic = tf.shape(tensor);
-            return @static.Select((size, index) => size ?? (object)dynamic[index]).ToArray();
+            var result = new PythonList<dynamic>();
+            foreach (object size in @static.Select((size, index) => size ?? (object)dynamic[index]))
+                result.Add(size);
+            return result;
         }
 
         static Tensor Softmax(Tensor input, int axis = -1)
@@ -65,7 +69,7 @@
         /// </summary>
         static Tensor SplitStates(Tensor input, int n)
         {
-            var shape = ShapeList(input).ToList();
+            var shape = ShapeList(input);
             dynamic reminder = shape.Last() / n;
             shape[shape.Count - 1] = n;
             shape.Add(reminder);
@@ -77,7 +81,7 @@
         /// </summary>
         static Tensor MergeStates(Tensor input)
         {
-            var shape = ShapeList(input).ToList();
+            var shape = ShapeList(input);
             shape[shape.Count - 2] = shape[shape.Count - 2] * shape[shape.Count - 1];
             shape.RemoveAt(shape.Count - 1);
             return tf.reshape_dyn(input, shape);
@@ -88,8 +92,8 @@
             Tensor result = null;
             new variable_scope(scope).Use(_ =>
             {
-                dynamic[] shape = ShapeList(input);
-                var start = shape.Take(shape.Length - 1);
+                var shape = ShapeList(input);
+                var start = shape.Take(shape.Count - 1);
                 object nx = shape.Last();
                 var wShape = new TensorShape(ValueTuple.Create(1, nx, nf));
                 var w = tf.get_variable("w", wShape, initializer: new random_normal_initializer(stddev: wInitialStDev));
@@ -98,7 +102,7 @@
                     tf.matmul(
                         tf.reshape_dyn(input, new[] { -1, nx }),
                         tf.reshape(w, new[] { -1, nf })) + b,
-                    start.Append(nf));
+                    start.Append(nf).ToArray());
             });
             return result;
         }
@@ -136,8 +140,8 @@
             {
                 // w has shape [batch, heads, dst_sequence, src_sequence], where information flows from src to dst.
                 var shape = ShapeList(w);
-                object nd = shape[shape.Length - 2];
-                object ns = shape[shape.Length - 1];
+                object nd = shape[shape.Count - 2];
+                object ns = shape[shape.Count - 1];
                 var b = AttentionMask(nd, ns, dtype: w.dtype);
                 b = tf.reshape_dyn(b, new object[] { 1, 1, nd, ns });
                 w = (dynamic)w * b - tf.cast(1e10, w.dtype) * (tf.constant(1.0) - (dynamic)b);
@@ -227,13 +231,13 @@
         /// <summary>
         /// "Add a new axis of given size.
         /// </summary>
-        static Tensor ExpandTile(dynamic value, Tensor size)
+        static Tensor ExpandTile(object value, Tensor size)
         {
-            value = tf.convert_to_tensor(value, name: "value");
-            int ndims = value.shape.ndims;
+            Tensor tensor = tf.convert_to_tensor(value, dtype: (DType)null, name: "value");
+            int ndims = tensor.shape.rank.Value;
             return tf.tile_dyn(
-                tf.expand_dims(value, axis: 0),
-                multiples: new object[] { size }.Concat(Enumerable.Repeat((object)1, ndims)));
+                tf.expand_dims(tensor, axis: 0),
+                multiples: new object[] { size }.Concat(Enumerable.Repeat((object)1, ndims)).ToArray());
         }
 
         static Tensor PositionsFor(dynamic tokens, Tensor pastLength)
@@ -252,7 +256,7 @@
             var result = new Dictionary<string, Tensor>();
             new variable_scope(scope, reuse: reuse).Use(_ =>
             {
-                dynamic[] batchSeq = ShapeList(input);
+                var batchSeq = ShapeList(input);
                 int batch = batchSeq[0];
                 dynamic sequence = batchSeq[1];
 
@@ -276,7 +280,7 @@
                     layer++;
                 }
 
-                result["present"] = tf.stack(presents, axis: 1);
+                result["present"] = tf.stack(presents.ToArray(), axis: 1);
                 h = Norm(h, "ln_f");
 
                 // Language model loss.  Do tokens <n predict token n?

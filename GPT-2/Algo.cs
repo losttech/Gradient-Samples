@@ -1,4 +1,4 @@
-﻿namespace Gradient.Samples.GPT2 {
+﻿namespace LostTech.Gradient.Samples.GPT2 {
     using System;
     static class Algo {
         public static int BinarySearch(Func<int, bool> predicate, int lo, int hi) {

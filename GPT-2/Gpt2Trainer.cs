@@ -1,6 +1,6 @@
 ﻿// ported from https://github.com/nshepperd/gpt-2
 
-namespace Gradient.Samples.GPT2 {
+namespace LostTech.Gradient.Samples.GPT2 {
     using System;
     using System.Collections.Generic;
     using System.Diagnostics;

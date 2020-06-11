@@ -1,10 +1,8 @@
-﻿namespace Gradient.Samples.GPT2
+﻿namespace LostTech.Gradient.Samples.GPT2
 {
     using System;
     using System.Collections.Generic;
     using System.Linq;
-    using Gradient.ManualWrappers;
-    using numpy;
     using tensorflow;
     using tensorflow.contrib.training;
     using tensorflow.python.framework.dtypes;

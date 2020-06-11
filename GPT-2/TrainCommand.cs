@@ -1,4 +1,4 @@
-﻿namespace Gradient.Samples.GPT2 {
+﻿namespace LostTech.Gradient.Samples.GPT2 {
     using System;
     using System.Collections.Generic;
     using System.IO;
@@ -84,7 +84,7 @@
                 PyObject tokens = numpy.stack(chunk);
                 chunk.Clear();
                 chunkSize = 0;
-                result.Add(ndarray.Wrap(tokens));
+                result.Add(tokens.As<ndarray>());
             }
             foreach (string text in texts) {
                 if (string.IsNullOrWhiteSpace(text))
