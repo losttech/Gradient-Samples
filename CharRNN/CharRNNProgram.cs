@@ -95,7 +95,7 @@
                         tf.constant(args.learningRate * Math.Pow(args.decayRate, epoch)))
                     });
                     dataLoader.ResetBatchPointer();
-                    var state = session.run(model.initialState.Items());
+                    var state = session.run(model.initialState.Items().ToArray());
                     var stopwatch = Stopwatch.StartNew();
                     for (int batch = 0; batch < dataLoader.batchCount; batch++) {
                         stopwatch.Restart();
