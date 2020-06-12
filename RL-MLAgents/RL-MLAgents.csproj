@@ -11,6 +11,7 @@
   <ItemGroup>
     <PackageReference Include="LostTech.MLAgents.Environments" Version="0.17.0-a0" />
     <PackageReference Include="Gradient" Version="1.15.0-CI-20200610-001" />
+    <PackageReference Include="LostTech.Python.Runtime" Version="3.0.0-b880" />
   </ItemGroup>
 
 </Project>

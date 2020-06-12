@@ -196,8 +196,10 @@ namespace LostTech.Gradient.Samples.SoftActorCritic {
             float inducedAction = 0;
             foreach (int stepN in Range(0, totalSteps)) {
 #if DEBUG
-                if (stepN == startSteps + 1)
+                if (stepN == startSteps + 1) {
                     Console.WriteLine("\nswitched from random actions to learned policy\n");
+                    Console.Title = "ML Agents: AI in control";
+                }
 #endif
                 var action = stepN > startSteps
                     ? GetAction(observation, deterministic: stepN % 2 == 0)
@@ -222,15 +224,15 @@ namespace LostTech.Gradient.Samples.SoftActorCritic {
                                 = newFrame[agent, observationDim];
                         }
                     }
-                    Debug.Assert(newObservation[3, 2].__eq__(observation[3, 2 + observationDimensions]));
+                    Debug.Assert((bool)newObservation[3, 2].__eq___dyn(observation[3, 2 + observationDimensions]).all());
                 } else {
                     newObservation[agents] = newFrame;
                 }
 
                 var done = np.zeros<float>((uint)agentCount);
-                if (stepResult.IsDone())
-                    done.__iadd__(1);
-                var reward = np.zeros<float>((uint)agentCount);
+                //if (stepResult.IsDone())
+                //    done.__iadd__(1);
+                var reward = np.zeros<float>((uint)agentCount) + 0.1f;
                 reward[agents] = stepResult.IsDone() ? stepResult.Item2.reward : stepResult.Item1.reward;
                 episodeLength++;
                 episodeReward.__iadd__(reward);
@@ -241,7 +243,7 @@ namespace LostTech.Gradient.Samples.SoftActorCritic {
                     observation = observation,
                     newObservation = newObservation,
                     action = action,
-                    reward = reward,
+                    reward = (ndarray)reward,
                     done = done,
                 });
 
