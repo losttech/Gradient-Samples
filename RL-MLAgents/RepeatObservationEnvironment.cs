@@ -1,8 +1,8 @@
-﻿namespace Gradient.Samples {
+﻿namespace LostTech.Gradient.Samples {
     using System;
     using System.Collections.Generic;
     using System.Diagnostics;
-    using Gradient;
+    using LostTech.Gradient;
     using mlagents_envs.base_env;
     using numpy;
     /// <summary>
@@ -18,15 +18,13 @@
             this.action = new float[agents];
         }
         public int AgentCount => this.action.Length;
-        public BatchedStepResult GetStepResult(string? agentGroupName) {
+        public (DecisionSteps, TerminalSteps) GetStepResult(string? agentGroupName) {
             if (agentGroupName != null) throw new KeyNotFoundException();
-            return new BatchedStepResult(
+            return (new DecisionSteps(
                 obs: new[] { np.ones(new int[] { this.AgentCount, 1 }, dtype: PythonClassContainer<float32>.Instance).__mul__(this.observation) },
                 reward: (ndarray)ndarray.FromList(this.action).__sub__(this.previousObservation).__abs__().__rsub__(2),
-                done: np.zeros(this.AgentCount),
-                max_step: null,
                 agent_id: np.zeros(this.AgentCount),
-                action_mask: null);
+                action_mask: null), null);
         }
         public void Reset() {
             this.observation = this.previousObservation = 0;
@@ -48,11 +46,11 @@
             env.Reset();
             env.Step();
             for(int episode = 0; episode < 100; episode++) {
-                var observation = (ndarray)env.GetStepResult(null).obs[0];
+                var observation = (ndarray)env.GetStepResult(null).Item1.obs[0];
                 env.SetActions(null, observation);
                 env.Step();
                 var step = env.GetStepResult(null);
-                ndarray success = step.reward.__ge___dyn(1.99f);
+                ndarray success = step.Item1.reward.__ge___dyn(1.99f);
                 bool allPass = success.all_dyn(keepdims: new ImplicitContainer<object>(null));
                 Trace.Assert(allPass);
             }

@@ -1,6 +1,6 @@
-﻿namespace Gradient.Samples.SoftActorCritic {
+﻿namespace LostTech.Gradient.Samples.SoftActorCritic {
     using System;
-    using Gradient;
+    using LostTech.Gradient;
     using numpy;
     using static System.Linq.Enumerable;
 
@@ -85,7 +85,7 @@
         /// <summary>
         /// Represents an observation of one or several ticks
         /// </summary>
-        public struct Observation: IDisposable {
+        public struct Observation {
             /// <summary>
             /// What agent saw
             /// </summary>
@@ -106,9 +106,6 @@
             /// Was the game over after this tick
             /// </summary>
             public ndarray done;
-
-            public void Dispose()
-                => Tools.Dispose(this.observation, this.action, this.reward, this.newObservation, this.done);
         }
     }
 }

@@ -1,7 +1,7 @@
 ﻿// ported from https://github.com/openai/spinningup/blob/0cba2886047b7de82c2cad4321df5875db644d61/spinup/algos/tf1/sac/core.py#L29
-namespace Gradient.Samples.SoftActorCritic {
+namespace LostTech.Gradient.Samples.SoftActorCritic {
     using System;
-    using Gradient;
+    using LostTech.Gradient;
     using tensorflow;
     using static Tools;
 

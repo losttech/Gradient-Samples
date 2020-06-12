@@ -1,4 +1,4 @@
-﻿namespace Gradient.Samples {
+﻿namespace LostTech.Gradient.Samples {
     using System;
     using System.Collections.Generic;
     using mlagents_envs.base_env;
@@ -19,11 +19,16 @@
         /// <summary>
         /// Get information about the last tick/step in the environment, as seen by a group of agents
         /// </summary>
-        BatchedStepResult GetStepResult(string? agentGroupName);
+        (DecisionSteps, TerminalSteps) GetStepResult(string? agentGroupName);
         /// <summary>
         /// Call before <see cref="Step"/> to set the action(s), that agent(s) in the specified
         /// group will do during the next time step
         /// </summary>
         void SetActions(string? agentGroupName, ndarray actions);
+    }
+
+    static class EnvironmentExtensions {
+        public static bool IsDone(this (DecisionSteps, TerminalSteps) step)
+            => step.Item1.reward.Length == 0;
     }
 }

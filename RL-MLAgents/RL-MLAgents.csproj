@@ -9,9 +9,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="LostTech.MLAgents.Environments" Version="0.0.1" />
-    <PackageReference Include="Gradient" Version="0.15.7.2" />
-    <PackageReference Include="LostTech.TensorFlow.Python" Version="0.0.15.7" />
+    <PackageReference Include="LostTech.MLAgents.Environments" Version="0.17.0-a0" />
+    <PackageReference Include="Gradient" Version="1.15.0-CI-20200610-001" />
   </ItemGroup>
 
 </Project>
