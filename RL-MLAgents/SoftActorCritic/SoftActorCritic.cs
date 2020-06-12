@@ -229,10 +229,12 @@ namespace LostTech.Gradient.Samples.SoftActorCritic {
                     newObservation[agents] = newFrame;
                 }
 
+                // set done to 1 for the agents, which no longer participate
+                // e.g. when observation/reward are undefined
                 var done = np.zeros<float>((uint)agentCount);
-                //if (stepResult.IsDone())
-                //    done.__iadd__(1);
-                var reward = np.zeros<float>((uint)agentCount) + 0.1f;
+                if (stepResult.IsDone())
+                    done[agents] = new float32(1);
+                var reward = np.zeros<float>((uint)agentCount);
                 reward[agents] = stepResult.IsDone() ? stepResult.Item2.reward : stepResult.Item1.reward;
                 episodeLength++;
                 episodeReward.__iadd__(reward);
@@ -243,7 +245,7 @@ namespace LostTech.Gradient.Samples.SoftActorCritic {
                     observation = observation,
                     newObservation = newObservation,
                     action = action,
-                    reward = (ndarray)reward,
+                    reward = reward,
                     done = done,
                 });
 
