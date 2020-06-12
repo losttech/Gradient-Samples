@@ -2,6 +2,8 @@
     using System;
     using System.Collections.Generic;
     using System.Diagnostics;
+    using System.Linq;
+
     using LostTech.Gradient;
     using mlagents_envs.base_env;
     using numpy;
@@ -23,7 +25,7 @@
             return (new DecisionSteps(
                 obs: new[] { np.ones(new int[] { this.AgentCount, 1 }, dtype: PythonClassContainer<float32>.Instance).__mul__(this.observation) },
                 reward: (ndarray)ndarray.FromList(this.action).__sub__(this.previousObservation).__abs__().__rsub__(2),
-                agent_id: np.zeros(this.AgentCount),
+                agent_id: Enumerable.Range(0, this.AgentCount).ToArray().ToNumPyArray(),
                 action_mask: null), null);
         }
         public void Reset() {
