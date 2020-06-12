@@ -37,8 +37,8 @@
 
         static Tensor Softmax(Tensor input, int axis = -1)
         {
-            var negative = input - tf.reduce_max(input, axis: new[] { axis }, keepdims: true);
-            var exp = tf.exp_dyn(negative);
+            Tensor negative = input - tf.reduce_max(input, axis: new[] { axis }, keepdims: true);
+            Tensor exp = tf.exp(negative);
             return exp / tf.reduce_sum(exp, axis: axis, keepdims: true);
         }
 
@@ -54,11 +54,11 @@
             new variable_scope(scope).Use(_ =>
             {
                 Dimension nState = input.shape[-1];
-                var g = tf.get_variable("g", new TensorShape(nState), initializer: new constant_initializer(1));
-                var b = tf.get_variable("b", new TensorShape(nState), initializer: new constant_initializer(0));
-                var mean = tf.reduce_mean(input, axis: axis, keepdims: true);
-                var s = tf.reduce_mean(tf.square_dyn(input - mean), axis: axis, keepdims: true);
-                result = (input - mean) * tf.rsqrt_dyn(s + epsilon);
+                Variable g = tf.get_variable("g", new TensorShape(nState), initializer: new constant_initializer(1));
+                Variable b = tf.get_variable("b", new TensorShape(nState), initializer: new constant_initializer(0));
+                Tensor mean = tf.reduce_mean(input, axis: axis, keepdims: true);
+                Tensor s = tf.reduce_mean(tf.square(input - mean), axis: axis, keepdims: true);
+                result = (input - mean) * tf.rsqrt(s + epsilon);
                 result = result * g + b;
             });
             return result;
@@ -113,9 +113,8 @@
         /// </summary>
         static Tensor AttentionMask(dynamic nd, dynamic ns, DType dtype = null)
         {
-            // have to use range_dyn, otherwise Tensors i and j end up being tf.float32
-            var i = tf.range_dyn(nd)[Range.All, (Range?)null];
-            var j = tf.range_dyn(ns);
+            var i = tf.range(nd)[Range.All, (Range?)null];
+            var j = tf.range(ns);
             var m = i >= j - ns + nd;
             return tf.cast(m, dtype);
         }
@@ -152,7 +151,7 @@
             {
                 // q, k, v have shape [batch, heads, sequence, features]
                 Tensor w = tf.matmul(q, k, transpose_b: true);
-                w *= tf.rsqrt_dyn(tf.cast(v.shape[-1].value, w.dtype));
+                w *= tf.rsqrt(tf.cast(v.shape[-1].value, w.dtype));
 
                 w = MaskAttentionWeights(w);
                 w = Softmax(w);
@@ -244,7 +243,7 @@
         {
             Tensor batchSize = tf.shape(tokens)[0];
             Tensor nSteps = tf.shape(tokens)[1];
-            dynamic stepsRange = tf.range_dyn(nSteps, dtype: tf.int32);
+            dynamic stepsRange = tf.range(nSteps, dtype: tf.int32);
             Tensor result = ExpandTile(stepsRange + pastLength, batchSize);
             if (!result.dtype.is_integer)
                 throw new InvalidOperationException();

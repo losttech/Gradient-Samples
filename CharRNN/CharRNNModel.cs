@@ -61,7 +61,7 @@
             });
 
             Variable embedding = tf.get_variable("embedding", new TensorShape(parameters.VocabularySize, parameters.RNNSize));
-            Tensor input = tf.nn.embedding_lookup_dyn(embedding, this.inputData);
+            Tensor input = tf.nn.embedding_lookup_dyn(embedding, ids: this.inputData);
 
             // dropout beta testing: double check which one should affect next line
             if (training && parameters.KeepOutputProbability < 1)
@@ -86,7 +86,7 @@
             var output = tf.reshape(concatenatedOutputs, new[] { -1, parameters.RNNSize });
 
             this.logits = tf.matmul(output, softmax_W) + softmax_b;
-            this.probs = tf.nn.softmax_dyn(new[] { this.logits });
+            this.probs = tf.nn.softmax(new[] { this.logits });
             this.loss = tensorflow.contrib.legacy_seq2seq.legacy_seq2seq.sequence_loss_by_example_dyn(
                 logits: new[] { this.logits },
                 targets: new[] { tf.reshape(this.targets, new[] { -1 }) },

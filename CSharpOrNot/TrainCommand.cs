@@ -71,8 +71,8 @@
             model.build(input_shape: new TensorShape(null, Height, Width, 1));
             model.summary();
 
-            tf.io.write_graph_dyn(
-                ((Session)tf.keras.backend.get_session()).graph_def,
+            tf.io.write_graph(
+                tf.keras.backend.get_session().graph_def,
                 Path.GetFullPath("logs"),
                 name: "model.pbtxt",
                 as_text: true);

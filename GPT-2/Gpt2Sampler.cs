@@ -18,7 +18,7 @@
 
             Tensor TopK()
             {
-                var valuesIndices = tf.nn.top_k_dyn(logits, k: topK);
+                var valuesIndices = tf.nn.top_k(logits, k: topK);
                 var values = valuesIndices[0];
                 Tensor minValues = values[Range.All, -1, tf.newaxis];
                 return tf.where(logits < minValues,
@@ -26,7 +26,7 @@
                     logits);
             }
 
-            Tensor isTopKZero = tf.equal_dyn(topK, 0);
+            Tensor isTopKZero = tf.equal(topK, 0);
             return tf.cond(isTopKZero,
                 true_fn: PythonFunctionContainer.Of(() => logits),
                 false_fn: PythonFunctionContainer.Of(TopK));
@@ -68,7 +68,7 @@
                     var nextOutputs = Step(hParams, prev[Range.All, tf.newaxis], past: past);
                     Tensor logits = nextOutputs["logits"][Range.All, -1, Range.All] / tf.constant(temperature, dtypes.float32_ref);
                     logits = TopLogits(logits, topK: topK);
-                    var samples = tf.multinomial_dyn(logits, num_samples: 1, output_dtype: tf.int32);
+                    var samples = tf.multinomial(logits, num_samples: 1, output_dtype: tf.int32);
                     return new Tensor[]
                     {
                         tf.concat(new []{ past, nextOutputs["presents"]}, axis: -2),
