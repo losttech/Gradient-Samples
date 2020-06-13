@@ -89,11 +89,11 @@
             var random = new Random();
             const int RepeatAgents = 3;
             ndarray RepeatRandomActionSampler()
-                => (ndarray)ndarray.FromList(Range(0, RepeatAgents)
+                => ndarray.FromList(Range(0, RepeatAgents)
                     .Select(_ => (float)random.NextDouble() * 2 - 1)
                     .ToList())
                 .reshape(new int[] { RepeatAgents, 1 })
-                .astype(PythonClassContainer<float32>.Instance);
+                .AsArray<float>();
             SoftActorCritic.SoftActorCritic.Run(new RepeatObservationEnvironment(RepeatAgents),
                 agentGroup: null,
                 actorCriticFactory: ActorCriticFactory,

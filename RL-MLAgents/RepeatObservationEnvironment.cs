@@ -20,11 +20,11 @@
             this.action = new float[agents];
         }
         public int AgentCount => this.action.Length;
-        public (DecisionSteps, TerminalSteps) GetStepResult(string? agentGroupName) {
+        public (DecisionSteps, TerminalSteps?) GetStepResult(string? agentGroupName) {
             if (agentGroupName != null) throw new KeyNotFoundException();
             return (new DecisionSteps(
-                obs: new[] { np.ones(new int[] { this.AgentCount, 1 }, dtype: PythonClassContainer<float32>.Instance).__mul__(this.observation) },
-                reward: (ndarray)ndarray.FromList(this.action).__sub__(this.previousObservation).__abs__().__rsub__(2),
+                obs: new[] { np.ones(new int[] { this.AgentCount, 1 }, dtype: dtype.GetClass<float>()) * this.observation},
+                reward: ((ndarray.FromList(this.action) - this.previousObservation).__abs__() - 2).AsArray<float>(),
                 agent_id: Enumerable.Range(0, this.AgentCount).ToArray().ToNumPyArray(),
                 action_mask: null), null);
         }
@@ -52,8 +52,8 @@
                 env.SetActions(null, observation);
                 env.Step();
                 var step = env.GetStepResult(null);
-                ndarray success = step.Item1.reward.__ge___dyn(1.99f);
-                bool allPass = success.all_dyn(keepdims: new ImplicitContainer<object>(null));
+                var success = step.Item1.reward >= 1.99f;
+                bool allPass = success.all();
                 Trace.Assert(allPass);
             }
         }

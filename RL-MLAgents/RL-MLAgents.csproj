@@ -5,13 +5,14 @@
     <TargetFramework>netcoreapp3.1</TargetFramework>
     <LangVersion>8.0</LangVersion>
     <Nullable>enable</Nullable>
-    <RootNamespace>Gradient.Samples</RootNamespace>
+    <RootNamespace>LostTech.Gradient.Samples</RootNamespace>
   </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="LostTech.MLAgents.Environments" Version="0.17.0-a0" />
     <PackageReference Include="Gradient" Version="1.15.0-CI-20200610-001" />
-    <PackageReference Include="LostTech.Python.Runtime" Version="3.0.0-b880" />
+    <PackageReference Include="Gradient.Runtime" Version="0.4.0-x09" />
+    <PackageReference Include="LostTech.NumPy" Version="0.2.0-b4" />
   </ItemGroup>
 
 </Project>

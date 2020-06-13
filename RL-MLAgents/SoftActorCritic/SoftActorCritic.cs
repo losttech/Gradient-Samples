@@ -184,14 +184,12 @@ namespace LostTech.Gradient.Samples.SoftActorCritic {
                 });
             }
 
-            var stopwatch = Stopwatch.StartNew();
-
-            var observation = (ndarray<float>)((ndarray)stepResult.Item1.obs[0]).repeat(feedFrames, axis: 1);
+            var observation = ((ndarray)stepResult.Item1.obs[0]).repeat(feedFrames, axis: 1).AsArray<float>();
             ndarray episodeReward = np.zeros(agentCount);
             int episodeLength = 0;
             int totalSteps = stepsPerEpoch * epochs;
 
-            var newObservation = (ndarray<float>)np.zeros_like(observation);
+            var newObservation = np.zeros_like(observation).AsArray<float>();
             float aiAction = 0;
             float inducedAction = 0;
             foreach (int stepN in Range(0, totalSteps)) {
@@ -204,7 +202,7 @@ namespace LostTech.Gradient.Samples.SoftActorCritic {
                 var action = stepN > startSteps
                     ? GetAction(observation, deterministic: stepN % 2 == 0)
                     : actionSampler();
-                aiAction += (float)(float32)action.__abs__().sum();
+                aiAction += action.__abs__().sum().AsScalar<float>();
 
                 if (!stepResult.IsDone())
                     env.SetActions(agentGroup, action);
@@ -224,7 +222,7 @@ namespace LostTech.Gradient.Samples.SoftActorCritic {
                                 = newFrame[agent, observationDim];
                         }
                     }
-                    Debug.Assert((bool)newObservation[3, 2].__eq___dyn(observation[3, 2 + observationDimensions]).all());
+                    Debug.Assert(newObservation[3, 2].__eq__(observation[3, 2 + observationDimensions]).all());
                 } else {
                     newObservation[agents] = newFrame;
                 }
@@ -284,7 +282,7 @@ namespace LostTech.Gradient.Samples.SoftActorCritic {
                     env.Reset();
                     stepResult = env.GetStepResult(agentGroup);
                     newFrame = (ndarray<float>)(stepResult.IsDone() ? stepResult.Item2.obs[0] : stepResult.Item1.obs[0]);
-                    observation = (ndarray<float>)newFrame.repeat(feedFrames, axis: 1);
+                    observation = newFrame.repeat(feedFrames, axis: 1).AsArray<float>();
                     episodeReward.fill_dyn(0);
                     episodeLength = 0;
                     Console.WriteLine("\n");
