@@ -5,12 +5,12 @@
     using System.IO;
     using System.Linq;
     using ManyConsole.CommandLineUtils;
-    using Newtonsoft.Json;
     using numpy;
     using Python.Runtime;
     using SharPy.Runtime;
     using tensorflow;
     using tensorflow.train;
+    using PythonException = Python.Runtime.PythonException;
 
     class Gpt2Interactive: ConsoleCommand
     {
@@ -70,15 +70,32 @@
                         Console.Write("Model prompt >>> ");
                         text = Console.ReadLine();
                         if (string.IsNullOrEmpty(text))
-                            Console.WriteLine("Prompt should not be empty");
+                            Console.Error.WriteLine("Prompt should not be empty");
                     } while (string.IsNullOrEmpty(text));
 
                     var contextTokens = encoder.Encode(text);
+                    if (!tf.test.is_gpu_available() && contextTokens.Count >= length.Value) {
+                        Console.Error.WriteLine();
+                        Console.Error.WriteLine("Prompt is too long.");
+                        Console.Error.WriteLine();
+                        continue;
+                    }
                     int generated = 0;
                     foreach (var _ in Enumerable.Range(0, sampleCount / batchSize)) {
-                        ndarray<int> @out = sess.run(output, feed_dict: new PythonDict<object, object> {
-                            [context] = Enumerable.Repeat(contextTokens, batchSize),
-                        })[Range.All, Range.StartAt(contextTokens.Count)];
+                        ndarray<int> @out;
+                        try {
+                            @out = sess.run(output,
+                                feed_dict: new PythonDict<object, object> {
+                                    [context] = Enumerable.Repeat(contextTokens, batchSize),
+                                })[Range.All, Range.StartAt(contextTokens.Count)];
+                        } catch (PythonException ex) when (ex.Message.StartsWith("InvalidArgumentError : indices[0,0] =", StringComparison.Ordinal)) {
+                            throw new ArgumentOutOfRangeException(
+                                "Unable to generate sequence of desired length. "
+                                + "Try lowering length by passing -l (-sample-length) parameter. "
+                                + "Current length: " + length.Value,
+                                innerException: ex);
+                        }
+
                         foreach (int i in Enumerable.Range(0, batchSize)) {
                             generated++;
                             var part = (ndarray<int>)@out[i];

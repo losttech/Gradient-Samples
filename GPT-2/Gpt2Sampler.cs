@@ -91,13 +91,18 @@
                     new TensorShape(batchSize),
                     new TensorShape((int?)batchSize, (int?)null),
                 };
+                Tensor maxTokens = tf.constant(length);
+                // for some reason on CPU you can't sample longer texts
+                // https://github.com/losttech/Gradient-Samples/issues/1
+                if (!tf.test.is_gpu_available())
+                    maxTokens -= tf.shape(context)[1];
                 result = tf.while_loop(
                     cond: PythonFunctionContainer.Of<object, object, object, bool>(True),
                     body: PythonFunctionContainer.Of(new Func<object, object, object, Tensor[]>(Body)),
                     parallel_iterations: 10,
                     swap_memory: false,
                     name: null,
-                    maximum_iterations: tf.constant(length),
+                    maximum_iterations: maxTokens,
                     loop_vars: loopVars,
                     shape_invariants: shapeInvariants,
                     back_prop: false)
