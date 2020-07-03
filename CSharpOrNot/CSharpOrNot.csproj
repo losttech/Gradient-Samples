@@ -19,7 +19,7 @@
     <PackageReference Include="Avalonia.Desktop" Version="0.8.0" />
     <PackageReference Include="ManyConsole.CommandLineUtils" Version="1.0.3-alpha" />
     <PackageReference Include="morelinq" Version="3.2.0" />
-    <PackageReference Include="System.Drawing.Common" Version="4.6.0" />
+    <PackageReference Include="System.Drawing.Common" Version="4.7.0" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\ResNetBlock\ResNetBlock.csproj" />

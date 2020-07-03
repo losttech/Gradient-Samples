@@ -11,6 +11,7 @@
     using Avalonia.Media;
     using LostTech.Gradient;
     using LostTech.Gradient.Exceptions;
+    using LostTech.TensorFlow;
     using MoreLinq;
     using numpy;
     using tensorflow;
@@ -49,7 +50,7 @@
             BitmapTools.SetGreyscalePalette(this.renderTarget);
             BitmapTools.SetGreyscalePalette(this.output);
 
-            GradientSetup.EnsureInitialized();
+            TensorFlowSetup.Instance.EnsureInitialized();
 
             this.model = CreateModel(classCount: IncludeExtensions.Length);
             this.model.build(new TensorShape(null, CSharpOrNot.Height, CSharpOrNot.Width, 1));

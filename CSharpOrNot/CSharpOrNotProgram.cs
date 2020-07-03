@@ -4,13 +4,14 @@
     using Avalonia;
     using Avalonia.Logging.Serilog;
     using LostTech.Gradient;
+    using LostTech.TensorFlow;
     using ManyConsole.CommandLineUtils;
     using tensorflow;
     using tensorflow.core.protobuf.config_pb2;
 
     static class CSharpOrNotProgram {
         public static int Main(string[] args) {
-            GradientSetup.OptInToUsageDataCollection();
+            TensorFlowSetup.Instance.OptInToUsageDataCollection();
             GradientEngine.UseEnvironmentFromVariable();
 
             dynamic config = config_pb2.ConfigProto.CreateInstance();
