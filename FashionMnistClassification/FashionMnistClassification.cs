@@ -2,7 +2,6 @@
     using System;
     using System.Diagnostics;
     using numpy;
-    using SharPy.Runtime;
     using tensorflow;
     using tensorflow.keras;
     using tensorflow.keras.layers;
