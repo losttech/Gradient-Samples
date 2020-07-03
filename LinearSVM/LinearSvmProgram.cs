@@ -1,15 +1,16 @@
 ﻿namespace LinearSVM {
     using System;
     using System.Collections;
+    using System.Collections.Generic;
     using System.Diagnostics;
     using System.Dynamic;
     using System.Linq;
     using LostTech.Gradient;
     using LostTech.Gradient.ManualWrappers;
+    using LostTech.TensorFlow;
     using ManyConsole.CommandLineUtils;
     using numpy;
     using Python.Runtime;
-    using SharPy.Runtime;
     using tensorflow;
     using tensorflow.train;
 
@@ -29,7 +30,7 @@
             GradientEngine.UseEnvironmentFromVariable();
 
             // required before using PythonEngine
-            GradientSetup.EnsureInitialized();
+            TensorFlowSetup.Instance.EnsureInitialized();
             return ConsoleCommandDispatcher.DispatchCommand(
                ConsoleCommandDispatcher.FindCommandsInSameAssemblyAs(typeof(LinearSvmProgram)),
                args, Console.Out);
@@ -75,19 +76,19 @@
                 for(int step = 0; step < this.flags.StepCount; step++)
                 {
                     (ndarray @in, ndarray @out) = this.NextBatch(trainIn, trainOut, sampleCount: this.flags.BatchSize);
-                    var feed = new PythonDict<object, object> {
+                    var feed = new Dictionary<object, object> {
                         [inPlace] = @in,
                         [outPlace] = @out,
                     };
                     sess.run(trainOp, feed_dict: feed);
 
                     var loss = sess.run(totalLoss, feed_dict: feed);
-                    var trainAcc = sess.run(accuracy, new PythonDict<object, object>
+                    var trainAcc = sess.run(accuracy, new Dictionary<object, object>
                     {
                         [inPlace] = trainIn,
                         [outPlace] = expectedTrainOut,
                     });
-                    var testAcc = sess.run(accuracy, new PythonDict<object, object>
+                    var testAcc = sess.run(accuracy, new Dictionary<object, object>
                     {
                         [inPlace] = testIn,
                         [outPlace] = expectedTestOut,
