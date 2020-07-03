@@ -5,7 +5,6 @@
     using CommandLine;
     using LostTech.Gradient;
     using LostTech.Gradient.ManualWrappers;
-    using SharPy.Runtime;
     using numpy;
     using tensorflow;
     using tensorflow.contrib.optimizer_v2.adam;
@@ -130,7 +129,7 @@
             for (int i = 0; i < num; i++) {
                 var x = np.zeros<int>(new ulong[] { 1, 1 });
                 x[0, 0] = vocabulary[chr];
-                var feed = new PythonDict<dynamic, dynamic> {
+                var feed = new Dictionary<dynamic, dynamic> {
                     [this.inputData] = x,
                     [this.initialState] = state,
                 };
@@ -165,7 +164,7 @@
             foreach (char chr in prime.Substring(0, prime.Length - 1)) {
                 var x = np.zeros<int>(new ulong[] { 1, 1 });
                 x[0, 0] = vocabulary[chr];
-                var feed = new PythonDict<dynamic, dynamic> {
+                var feed = new Dictionary<dynamic, dynamic> {
                     [this.inputData] = x,
                     [this.initialState] = state,
                 };

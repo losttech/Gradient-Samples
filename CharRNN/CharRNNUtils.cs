@@ -6,7 +6,6 @@
     using System.Text;
     using Newtonsoft.Json;
     using numpy;
-    using SharPy.Runtime;
 
     class TextLoader {
         readonly int batchSize;

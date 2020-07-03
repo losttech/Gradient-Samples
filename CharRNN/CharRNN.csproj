@@ -15,8 +15,7 @@
 
   <ItemGroup>
     <PackageReference Include="CommandLineParser" Version="2.3.0" />
-    <PackageReference Include="Gradient" Version="1.15.0-CI-20200610-001" />
-    <PackageReference Include="LostTech.Python.Runtime" Version="3.0.0-b879" />
+    <PackageReference Include="LostTech.TensorFlow" Version="1.15.0-CI-20200702-002" />
     <PackageReference Include="Newtonsoft.Json" Version="12.0.1" />
   </ItemGroup>
 

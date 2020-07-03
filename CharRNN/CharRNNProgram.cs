@@ -7,7 +7,6 @@
     using CommandLine;
     using LostTech.Gradient;
     using Newtonsoft.Json;
-    using SharPy.Runtime;
     using tensorflow;
     using tensorflow.summary;
     using tensorflow.train;
@@ -100,7 +99,7 @@
                     for (int batch = 0; batch < dataLoader.batchCount; batch++) {
                         stopwatch.Restart();
                         var (input, targets) = dataLoader.NextBatch();
-                        var feed = new PythonDict<dynamic, dynamic> {
+                        var feed = new Dictionary<dynamic, dynamic> {
                             [model.inputData] = input,
                             [model.targets] = targets,
                         };
@@ -133,5 +132,13 @@
 
         static (List<char>, Dictionary<char, int>) LoadCharsVocabulary(string path)
             => JsonConvert.DeserializeObject<(List<char>, Dictionary<char, int>)>(File.ReadAllText(path));
+
+        static IEnumerable<(int, T)> Enumerate<T>(this IEnumerable<T> enumerable) {
+            int i = 0;
+            foreach (var item in enumerable) {
+                yield return (i, item);
+                i++;
+            }
+        }
     }
 }
