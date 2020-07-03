@@ -1,4 +1,5 @@
 Imports LostTech.Gradient
+Imports LostTech.TensorFlow
 Imports tensorflow
 Imports tensorflow.core.protobuf.config_pb2
 Imports tensorflow.python.ops.gen_bitwise_ops
@@ -6,7 +7,7 @@ Imports tensorflow.summary
 
 Module Program
     Sub Main(args As String())
-        GradientSetup.OptInToUsageDataCollection()
+        TensorFlowSetup.Instance.OptInToUsageDataCollection()
         GradientEngine.UseEnvironmentFromVariable()
 
         GradientLog.OutputWriter = Console.Out

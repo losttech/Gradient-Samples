@@ -2,6 +2,7 @@
 
 open System
 open LostTech.Gradient
+open LostTech.TensorFlow
 open tensorflow
 open tensorflow.summary
 open tensorflow.core.protobuf.config_pb2
@@ -9,7 +10,7 @@ open tensorflow.python.ops.gen_bitwise_ops
 
 [<EntryPoint>]
 let main argv =
-    GradientSetup.OptInToUsageDataCollection()
+    TensorFlowSetup.Instance.OptInToUsageDataCollection()
     GradientEngine.UseEnvironmentFromVariable() |> ignore
 
     GradientLog.OutputWriter <- Console.Out
