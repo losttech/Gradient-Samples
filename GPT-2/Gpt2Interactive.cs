@@ -5,10 +5,7 @@
     using System.IO;
     using System.Linq;
     using ManyConsole.CommandLineUtils;
-    using Newtonsoft.Json;
     using numpy;
-    using Python.Runtime;
-    using SharPy.Runtime;
     using tensorflow;
     using tensorflow.train;
 
@@ -76,7 +73,7 @@
                     var contextTokens = encoder.Encode(text);
                     int generated = 0;
                     foreach (var _ in Enumerable.Range(0, sampleCount / batchSize)) {
-                        ndarray<int> @out = sess.run(output, feed_dict: new PythonDict<object, object> {
+                        ndarray<int> @out = sess.run(output, feed_dict: new Dictionary<object, object> {
                             [context] = Enumerable.Repeat(contextTokens, batchSize).ToArray(),
                         })[Range.All, Range.StartAt(contextTokens.Count)];
                         foreach (int i in Enumerable.Range(0, batchSize)) {

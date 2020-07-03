@@ -1,6 +1,7 @@
 ﻿namespace LostTech.Gradient.Samples.GPT2
 {
     using System;
+    using LostTech.TensorFlow;
     using ManyConsole.CommandLineUtils;
 
     static class Gpt2Program
@@ -8,9 +9,8 @@
         static int Main(string[] args)
         {
             Console.Title = "GPT-2";
-            GradientSetup.OptInToUsageDataCollection();
             GradientEngine.UseEnvironmentFromVariable();
-            GradientSetup.EnsureInitialized();
+            TensorFlowSetup.Instance.EnsureInitialized();
 
             return ConsoleCommandDispatcher.DispatchCommand(
                 ConsoleCommandDispatcher.FindCommandsInSameAssemblyAs(typeof(Gpt2Program)),
