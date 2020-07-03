@@ -1,10 +1,11 @@
 ﻿open System
 open System.Collections.Generic
+open System.Runtime.InteropServices
 open FSharp.Interop.Dynamic
 open FSharp.Interop.Dynamic.Operators
 
 open LostTech.Gradient
-open LostTech.Gradient.BuiltIns
+open LostTech.TensorFlow
 open numpy
 open tensorflow
 open tensorflow.keras
@@ -19,7 +20,7 @@ let inline implicit (x:^a): ImplicitContainer< ^a > = !> x
 
 [<EntryPoint>]
 let main argv =
-    GradientSetup.OptInToUsageDataCollection()
+    TensorFlowSetup.Instance.OptInToUsageDataCollection()
     GradientEngine.UseEnvironmentFromVariable() |> ignore
 
     GradientLog.OutputWriter <- Console.Out
@@ -39,7 +40,7 @@ let main argv =
     model.compile(
         optimizer = implicit<obj>(Adam()),
         loss = tf.keras.losses.sparse_categorical_crossentropy_fn,
-        metrics = Seq.cast<obj> ["accuracy"])
+        metrics = (PyList.ofSeq<obj> ["accuracy"] :> _ seq))
 
     model.fit(trainImages, trainLabels, epochs = 5) |> ignore
 
