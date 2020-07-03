@@ -161,13 +161,13 @@ namespace LostTech.Gradient.Samples.SoftActorCritic {
             // Polyak averaging for target variables
             Operation targetUpdate;
             using (var _ = CM.StartUsing(tf.control_dependencies(new[] { trainValue })))
-                targetUpdate = tf.group(
+                targetUpdate = tf.group_dyn(
                     GetVariables("main").Zip(GetVariables("target"))
                     .Select(((Variable main, Variable target)v)
                         => tf.assign(v.target, v.target * (dynamic)polyak + v.main * (dynamic)(1-polyak), name: "targetUpdate"))
                     .ToArray());
 
-            var targetInit = tf.group(
+            var targetInit = tf.group_dyn(
                 GetVariables("main").Zip(GetVariables("target"))
                 .Select(((Variable main, Variable target) v) => tf.assign(v.target, v.main))
                 .ToArray());

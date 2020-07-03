@@ -7,6 +7,7 @@
     using System.Reflection;
     using LostTech.Gradient;
     using LostTech.Gradient.Samples.SoftActorCritic;
+    using LostTech.TensorFlow;
     using mlagents_envs.environment;
     using mlagents_envs.side_channel.engine_configuration_channel;
     using numpy;
@@ -27,7 +28,7 @@
 
         static void Main(string[] args) {
             GradientEngine.UseEnvironmentFromVariable();
-            GradientSetup.EnsureInitialized();
+            TensorFlowSetup.Instance.EnsureInitialized();
             Console.Title = "ML Agents";
 
             if (args.Length == 1)

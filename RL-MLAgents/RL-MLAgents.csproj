@@ -10,9 +10,7 @@
 
   <ItemGroup>
     <PackageReference Include="LostTech.MLAgents.Environments" Version="0.17.0-a0" />
-    <PackageReference Include="Gradient" Version="1.15.0-CI-20200610-001" />
-    <PackageReference Include="Gradient.Runtime" Version="0.4.0-x09" />
-    <PackageReference Include="LostTech.NumPy" Version="0.2.0-b4" />
+    <PackageReference Include="LostTech.TensorFlow" Version="1.15.0-CI-20200702-002" />
   </ItemGroup>
 
 </Project>
