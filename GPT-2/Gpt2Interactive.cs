@@ -61,14 +61,20 @@
                 checkpoint = checkpoint ?? tf.train.latest_checkpoint(Path.Combine("models", modelName));
                 saver.restore(sess, checkpoint);
 
-                while (true) {
+                bool interrupted = false;
+                Console.CancelKeyPress += delegate { interrupted = true; };
+
+                while (!interrupted) {
                     string text;
                     do {
                         Console.Write("Model prompt >>> ");
                         text = Console.ReadLine();
+                        if (interrupted) break;
                         if (string.IsNullOrEmpty(text))
                             Console.WriteLine("Prompt should not be empty");
                     } while (string.IsNullOrEmpty(text));
+
+                    if (interrupted) break;
 
                     var contextTokens = encoder.Encode(text);
                     int generated = 0;
