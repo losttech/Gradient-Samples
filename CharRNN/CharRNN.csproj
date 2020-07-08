@@ -15,7 +15,7 @@
 
   <ItemGroup>
     <PackageReference Include="CommandLineParser" Version="2.3.0" />
-    <PackageReference Include="LostTech.TensorFlow" Version="1.15.0-CI-20200702-002" />
+    <PackageReference Include="LostTech.TensorFlow" Version="1.15.0-CI-20200707-003" />
     <PackageReference Include="Newtonsoft.Json" Version="12.0.1" />
   </ItemGroup>
 
