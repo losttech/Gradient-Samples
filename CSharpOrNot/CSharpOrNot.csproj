@@ -4,7 +4,7 @@
     <TargetFrameworks>netcoreapp3.1</TargetFrameworks>
     <ApplicationIcon />
     <StartupObject />
-    <RootNamespace>Gradient.Samples</RootNamespace>
+    <RootNamespace>LostTech.Gradient.Samples</RootNamespace>
   </PropertyGroup>
   <ItemGroup>
     <Compile Update="**\*.xaml.cs">

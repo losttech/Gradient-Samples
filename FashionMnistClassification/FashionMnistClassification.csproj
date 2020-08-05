@@ -5,7 +5,7 @@
     <TargetFramework>netcoreapp2.1</TargetFramework>
     <LangVersion>8.0</LangVersion>
     <CodeAnalysisRuleSet>FashionMnistClassification.ruleset</CodeAnalysisRuleSet>
-    <RootNamespace>Gradient.Samples</RootNamespace>
+    <RootNamespace>LostTech.Gradient.Samples</RootNamespace>
   </PropertyGroup>
 
   <ItemGroup>
