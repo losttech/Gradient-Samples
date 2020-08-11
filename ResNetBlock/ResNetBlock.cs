@@ -25,7 +25,7 @@
             this.outputChannels = filters[PartCount - 1];
         }
 
-        object CallImpl(IGraphNodeBase inputs, dynamic? training) {
+        Tensor CallImpl(IGraphNodeBase inputs, dynamic? training) {
             IGraphNodeBase result = inputs;
 
             var batchNormExtraArgs = new Dictionary<string, object>();
@@ -36,12 +36,12 @@
                 result = this.convs[part].__call__(result);
                 result = this.batchNorms[part].__call__(result, kwargs: batchNormExtraArgs);
                 if (part + 1 != PartCount)
-                    result = this.activation.Invoke(result);
+                    result = this.activation.Invoke(result)!;
             }
 
             result = (Tensor)result + inputs;
 
-            return this.activation.Invoke(result);
+            return this.activation.Invoke(result)!;
         }
 
         public override TensorShape compute_output_shape(TensorShape input_shape) {
@@ -54,15 +54,15 @@
             return input_shape;
         }
 
-        public override dynamic call(IEnumerable<IGraphNodeBase> inputs, IGraphNodeBase? training, IGraphNodeBase? mask) {
+        public override Tensor call(IEnumerable<IGraphNodeBase> inputs, IGraphNodeBase? training, IGraphNodeBase? mask) {
             return this.CallImpl((Tensor)inputs.Single(), training);
         }
 
-        public override object call(IGraphNodeBase inputs, bool training, IGraphNodeBase? mask = null) {
+        public override Tensor call(IGraphNodeBase inputs, bool training, IGraphNodeBase? mask = null) {
             return this.CallImpl((Tensor)inputs, training);
         }
 
-        public override dynamic call(IGraphNodeBase inputs, IGraphNodeBase? training = null, IEnumerable<IGraphNodeBase>? mask = null) {
+        public override Tensor call(IGraphNodeBase inputs, IGraphNodeBase? training = null, IEnumerable<IGraphNodeBase>? mask = null) {
             return this.CallImpl((Tensor)inputs, training);
         }
     }
