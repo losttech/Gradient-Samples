@@ -1,9 +1,10 @@
-namespace LostTech.Gradient.Samples.GPT2
+﻿namespace LostTech.Gradient.Samples.GPT2
 {
     using System;
     using System.Collections.Generic;
     using System.IO;
     using System.Linq;
+    using System.Threading;
     using ManyConsole.CommandLineUtils;
     using numpy;
     using tensorflow;
@@ -62,19 +63,20 @@ namespace LostTech.Gradient.Samples.GPT2
                 saver.restore(sess, checkpoint);
 
                 bool interrupted = false;
-                Console.CancelKeyPress += delegate { interrupted = true; };
+                Console.CancelKeyPress += (object sender, ConsoleCancelEventArgs args) =>
+                    Volatile.Write(ref interrupted, args.Cancel = true);
 
                 while (!interrupted) {
                     string text;
                     do {
                         Console.Write("Model prompt >>> ");
                         text = Console.ReadLine();
-                        if (interrupted) break;
+                        if (Volatile.Read(ref interrupted)) break;
                         if (string.IsNullOrEmpty(text))
                             Console.WriteLine("Prompt should not be empty");
-                    } while (string.IsNullOrEmpty(text));
+                    } while (!Volatile.Read(ref interrupted) && string.IsNullOrEmpty(text));
 
-                    if (interrupted) break;
+                    if (Volatile.Read(ref interrupted)) break;
 
                     var contextTokens = encoder.Encode(text);
                     int generated = 0;
