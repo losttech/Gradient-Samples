@@ -38,28 +38,35 @@
 
         public int Run()
         {
-            dynamic datasets = Py.Import("sklearn.datasets");
-            dynamic slice = PythonEngine.Eval("slice");
-            var iris = datasets.load_iris();
-            dynamic firstTwoFeaturesIndex = new PyTuple(new PyObject[] {
-                slice(null),
-                slice(null, 2)
-            });
-            var input = iris.data.__getitem__(firstTwoFeaturesIndex);
-            IEnumerable target = iris.target;
-            var expectedOutput = target.Cast<dynamic>()
-                .Select(l => (int)l == 0 ? 1 : -1)
-                .ToArray();
-            int trainCount = expectedOutput.Length * 4 / 5;
-            var trainIn = np.array(((IEnumerable)input).Cast<dynamic>().Take(trainCount));
-            var trainOut = np.array(expectedOutput.Take(trainCount));
-            var testIn = np.array(((IEnumerable)input).Cast<dynamic>().Skip(trainCount));
-            var testOut = np.array(expectedOutput.Skip(trainCount));
+            Variable w, b;
+            Tensor inPlace, outPlace;
+            ndarray trainIn, trainOut, testIn, testOut;
+            using (Py.GIL()) {
+                dynamic datasets = Py.Import("sklearn.datasets");
+                dynamic slice = PythonEngine.Eval("slice");
+                var iris = datasets.load_iris();
+                dynamic firstTwoFeaturesIndex = new PyTuple(new PyObject[] {
+                    slice(null),
+                    slice(null, 2)
+                });
+                var input = iris.data.__getitem__(firstTwoFeaturesIndex);
+                IEnumerable target = iris.target;
+                var expectedOutput = target.Cast<dynamic>()
+                    .Select(l => (int)l == 0 ? 1 : -1)
+                    .ToArray();
+                int trainCount = expectedOutput.Length * 4 / 5;
+                trainIn = np.array(((IEnumerable)input).Cast<dynamic>().Take(trainCount));
+                trainOut = np.array(expectedOutput.Take(trainCount));
+                testIn = np.array(((IEnumerable)input).Cast<dynamic>().Skip(trainCount));
+                testOut = np.array(expectedOutput.Skip(trainCount));
 
-            var inPlace = tf.placeholder(shape: new TensorShape(null, input.shape[1]), dtype: tf.float32);
-            var outPlace = tf.placeholder(shape: new TensorShape(null, 1), dtype: tf.float32);
-            var w = new Variable(tf.random_normal(shape: new TensorShape((int)input.shape[1], 1)));
-            var b = new Variable(tf.random_normal(shape: new TensorShape(1, 1)));
+                inPlace = tf.placeholder(shape: new TensorShape(null, input.shape[1]),
+                    dtype: tf.float32);
+                outPlace = tf.placeholder(shape: new TensorShape(null, 1), dtype: tf.float32);
+                w = new Variable(
+                    tf.random_normal(shape: new TensorShape((int)input.shape[1], 1)));
+                b = new Variable(tf.random_normal(shape: new TensorShape(1, 1)));
+            }
 
             var totalLoss = Loss(w, b, inPlace, outPlace);
             var accuracy = Inference(w, b, inPlace, outPlace);

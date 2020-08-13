@@ -75,16 +75,15 @@
         const int TrimAfter = 16 * 1024 * 1024;
 
         static DataSet Load(Gpt2Encoder encoder, IEnumerable<string> texts) {
-            dynamic numpy = Py.Import("numpy");
             var result = new DataSet();
             string encodedEndOfText = encoder.EncodedEndOfText;
             var chunk = new List<string>();
             int chunkSize = 0;
             void AddChunk() {
-                PyObject tokens = numpy.stack(chunk);
+                var tokens = np.stack(chunk);
                 chunk.Clear();
                 chunkSize = 0;
-                result.Add(tokens.As<ndarray>());
+                result.Add(tokens);
             }
             foreach (string text in texts) {
                 if (string.IsNullOrWhiteSpace(text))

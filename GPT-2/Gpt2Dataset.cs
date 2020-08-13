@@ -36,9 +36,8 @@
                     string rawText = File.ReadAllText(file);
                     if (String.IsNullOrWhiteSpace(rawText))
                         continue;
-                    dynamic numpy = Py.Import("numpy");
-                    PyObject tokens = numpy.stack(encoder.Encode(rawText));
-                    tokenChunks.Add(tokens.As<ndarray>());
+                    var tokens = np.stack(encoder.Encode(rawText));
+                    tokenChunks.Add(tokens);
                 }
             }
 

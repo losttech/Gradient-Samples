@@ -1,4 +1,4 @@
-namespace LostTech.Gradient.Samples.GPT2
+﻿namespace LostTech.Gradient.Samples.GPT2
 {
     using System;
     using System.Collections.Generic;
@@ -46,7 +46,7 @@ namespace LostTech.Gradient.Samples.GPT2
                 var logits = lmOutput["logits"][.., .., Range.EndAt((int)@params.get("n_vocab"))];
                 Tensor presents = lmOutput["present"];
                 int?[] pastShape = Gpt2Model.PastShape(hParams: @params, batchSize: batchSize);
-                presents.set_shape_(pastShape.Cast<object>());
+                presents.set_shape_(new TensorShape(pastShape));
 
                 return new SortedDictionary<string, object>
                 {
