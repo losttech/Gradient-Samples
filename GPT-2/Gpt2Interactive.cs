@@ -1,4 +1,4 @@
-﻿namespace LostTech.Gradient.Samples.GPT2
+namespace LostTech.Gradient.Samples.GPT2
 {
     using System;
     using System.Collections.Generic;
@@ -81,7 +81,7 @@
                     foreach (var _ in Enumerable.Range(0, sampleCount / batchSize)) {
                         ndarray<int> @out = sess.run(output, feed_dict: new Dictionary<object, object> {
                             [context] = Enumerable.Repeat(contextTokens, batchSize).ToArray(),
-                        })[Range.All, Range.StartAt(contextTokens.Count)];
+                        })[.., contextTokens.Count ..];
                         foreach (int i in Enumerable.Range(0, batchSize)) {
                             generated++;
                             var part = (ndarray<int>)@out[i];

@@ -49,8 +49,8 @@ namespace LostTech.Gradient.Samples.GPT2 {
             sess.UseSelf(session => {
                 var context = tf.placeholder(tf.int32, new TensorShape(this.batchSize, null));
                 var output = Gpt2Model.Model(this.hParams, input: context);
-                Tensor labels = context[Range.All, Range.StartAt(1)];
-                Tensor logits = output["logits"][Range.All, Range.EndAt(new Index(1, fromEnd: true))];
+                Tensor labels = context[.., 1..];
+                Tensor logits = output["logits"][.., Range.EndAt(new Index(1, fromEnd: true))];
                 var loss = tf.reduce_mean(
                     tf.nn.sparse_softmax_cross_entropy_with_logits_dyn(
                         labels: labels,

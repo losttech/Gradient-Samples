@@ -113,7 +113,7 @@
         /// </summary>
         static Tensor AttentionMask(dynamic nd, dynamic ns, DType dtype = null)
         {
-            var i = tf.range(nd)[Range.All, (Range?)null];
+            var i = tf.range(nd)[.., null];
             var j = tf.range(ns);
             var m = i >= j - ns + nd;
             return tf.cast(m, dtype);
@@ -262,7 +262,7 @@
                 var wpe = tf.get_variable("wpe", new TensorShape((int)hParams.n_ctx, (int)hParams.n_embd), initializer: new random_normal_initializer(stddev: 0.01));
                 var wte = tf.get_variable("wte", new TensorShape((int)hParams.n_vocab, (int)hParams.n_embd), initializer: new random_normal_initializer(stddev: 0.02));
 
-                Tensor pastLen = past is null ? tf.constant(0) : tf.shape(past)[-2];
+                Tensor pastLen = past is null ? tf.constant(0) : tf.shape(past)[^1];
                 var h = tf.gather_dyn(wte, input) + tf.gather_dyn(wpe, PositionsFor(input, pastLen));
 
                 var presents = new List<object>();
