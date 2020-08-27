@@ -7,9 +7,13 @@
     public static class Gpt2Checkpoints {
         public const string CheckpointDir = "checkpoint";
 
-        public static string GetLatestCheckpoint(string gpt2Root, string modelName, string run)
-            => tf.train.latest_checkpoint(Path.GetFullPath(Path.Combine(gpt2Root, CheckpointDir, run)))
-               ?? GetOriginalCheckpoint(gpt2Root, modelName);
+        public static string GetLatestCheckpoint(string gpt2Root, string modelName, string run) {
+            string latestCheckpoint = run is null
+                ? null
+                : tf.train.latest_checkpoint(Path.GetFullPath(Path.Combine(gpt2Root, CheckpointDir, run)));
+            latestCheckpoint ??= GetOriginalCheckpoint(gpt2Root, modelName);
+            return latestCheckpoint;
+        }
 
         public static string GetOriginalCheckpoint(string gpt2Root, string modelName)
             => tf.train.latest_checkpoint(Path.GetFullPath(Path.Combine(gpt2Root, "models", modelName)));

@@ -8,6 +8,7 @@
     using ManyConsole.CommandLineUtils;
     using numpy;
     using tensorflow;
+    using tensorflow.errors;
     using tensorflow.train;
 
     class Gpt2Interactive: ConsoleCommand
@@ -79,11 +80,27 @@
                     if (Volatile.Read(ref interrupted)) break;
 
                     var contextTokens = encoder.Encode(text);
+                    if (!tf.test.is_gpu_available() && contextTokens.Count >= length.Value) {
+                        Console.Error.WriteLine();
+                        Console.Error.WriteLine("Prompt is too long.");
+                        Console.Error.WriteLine();
+                        continue;
+                    }
                     int generated = 0;
                     foreach (var _ in Enumerable.Range(0, sampleCount / batchSize)) {
-                        ndarray<int> @out = sess.run(output, feed_dict: new Dictionary<object, object> {
-                            [context] = Enumerable.Repeat(contextTokens, batchSize).ToArray(),
-                        })[.., contextTokens.Count ..];
+                        ndarray<int> @out;
+                        try {
+                            @out = sess.run(output, feed_dict: new Dictionary<object, object> {
+                                [context] = Enumerable.Repeat(contextTokens, batchSize).ToArray(),
+                            })[.., contextTokens.Count..];
+                        } catch (InvalidArgumentError ex) {
+                            throw new ArgumentOutOfRangeException(
+                                "Unable to generate sequence of desired length. "
+                                + "Try lowering length by passing -l (-sample-length) parameter. "
+                                + "Current length: " + length.Value,
+                                innerException: ex);
+                        }
+
                         foreach (int i in Enumerable.Range(0, batchSize)) {
                             generated++;
                             var part = (ndarray<int>)@out[i];
