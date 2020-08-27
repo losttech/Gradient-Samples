@@ -9,9 +9,9 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="LostTech.MLAgents.Environments" Version="0.17.0-a0" />
-    <PackageReference Include="LostTech.NumPy" Version="0.2.1-a0" />
-    <PackageReference Include="LostTech.TensorFlow" Version="1.15.0-CI-20200812-003" />
+    <PackageReference Include="LostTech.MLAgents.Environments" Version="0.19.0" />
+    <PackageReference Include="LostTech.NumPy" Version="0.2.1" />
+    <PackageReference Include="LostTech.TensorFlow" Version="1.15.0-RC1" />
   </ItemGroup>
 
 </Project>
