@@ -1,4 +1,4 @@
-﻿namespace Gradient.Samples {
+﻿namespace LostTech.Gradient.Samples {
     using Avalonia;
     using Avalonia.Markup.Xaml;
 

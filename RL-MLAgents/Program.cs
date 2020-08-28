@@ -1,19 +1,20 @@
-﻿namespace Gradient.Samples {
+﻿namespace LostTech.Gradient.Samples {
     using System;
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.IO;
     using System.Linq;
     using System.Reflection;
-    using Gradient;
-    using Gradient.Samples.SoftActorCritic;
+    using LostTech.Gradient;
+    using LostTech.Gradient.Samples.SoftActorCritic;
     using LostTech.TensorFlow;
     using mlagents_envs.environment;
     using mlagents_envs.side_channel.engine_configuration_channel;
     using numpy;
     using tensorflow;
-    using PyFunc = Gradient.PythonFunctionContainer;
+    using PyFunc = PythonFunctionContainer;
     using static System.Linq.Enumerable;
+    using mlagents_envs.base_env;
 
     static class Program {
         static ActorCritic ActorCriticFactory(
@@ -26,14 +27,8 @@
                                        policyFactory, actionLimit);
 
         static void Main(string[] args) {
-            // deploy prepackaged TensorFlow runtime next to this assembly
-            var deployTensorFlowTo = new DirectoryInfo(Path.Combine(
-                Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location),
-                "TensorFlow"));
-            var tfEnv = PackagedTensorFlow.EnsureDeployed(deployTensorFlowTo);
-
-            GradientEngine.UseEnvironment(tfEnv);
-            GradientSetup.EnsureInitialized();
+            GradientEngine.UseEnvironmentFromVariable();
+            TensorFlowSetup.Instance.EnsureInitialized();
             Console.Title = "ML Agents";
 
             if (args.Length == 1)
@@ -45,20 +40,21 @@
             var engineConfigChannel = new EngineConfigurationChannel();
             // connect to running Unity, you'll have to press Play there
             const string? envName = null;
+            Console.WriteLine("RELEASE THE KRAKEN!");
             var env = new UnityEnvironment(base_port: 5004, file_name: envName,
                 side_channels: new[] { engineConfigChannel });
 
             try {
-                engineConfigChannel.set_configuration_parameters(time_scale: 0.3);
+                engineConfigChannel.set_configuration_parameters(time_scale: 3.3);
                 env.reset();
 
-                string agentGroup = env.get_agent_groups().Single();
-                var spec = env.get_agent_group_spec(agentGroup);
+                // TODO: fix behaviors_specs to be real Dictionary
+                const string agentGroup = "3DBall?team=0";
+                BehaviorSpec spec = env.behavior_specs_dyn[agentGroup];
 
-                var stepResult = env.get_step_result(agentGroup);
-                Debug.Assert(stepResult.obs.Count == 1);
-                (int, int) observationsShape = ((ndarray)stepResult.obs[0]).shape;
-                int observationSize = observationsShape.Item2;
+                (DecisionSteps, TerminalSteps) stepResult = env.get_steps(agentGroup);
+                Debug.Assert(stepResult.Item1.obs.Count == 1);
+                (int agentCount, int observationSize) = ((int,int))((ndarray)stepResult.Item1.obs[0]).shape;
 
                 if (!spec.is_action_continuous())
                     throw new NotImplementedException("discrete");
@@ -66,10 +62,10 @@
                 var random = new Random();
                 ndarray RandomActionSampler()
                     // a list of random values between -1.0 and +1.0
-                    => (ndarray)ndarray.FromList(Range(0, spec.action_size * stepResult.n_agents())
+                    => (ndarray)ndarray.FromList(Range(0, spec.action_size * agentCount)
                         .Select(_ => (float)random.NextDouble() * 2 - 1)
                         .ToList())
-                    .reshape(new int[] { stepResult.n_agents(), spec.action_size })
+                    .reshape(new int[] { agentCount, spec.action_size })
                     .astype(PythonClassContainer<float32>.Instance);
 
                 SoftActorCritic.SoftActorCritic.Run(new UnityEnvironmentProxy(env),
@@ -94,11 +90,11 @@
             var random = new Random();
             const int RepeatAgents = 3;
             ndarray RepeatRandomActionSampler()
-                => (ndarray)ndarray.FromList(Range(0, RepeatAgents)
+                => ndarray.FromList(Range(0, RepeatAgents)
                     .Select(_ => (float)random.NextDouble() * 2 - 1)
                     .ToList())
                 .reshape(new int[] { RepeatAgents, 1 })
-                .astype(PythonClassContainer<float32>.Instance);
+                .AsArray<float>();
             SoftActorCritic.SoftActorCritic.Run(new RepeatObservationEnvironment(RepeatAgents),
                 agentGroup: null,
                 actorCriticFactory: ActorCriticFactory,

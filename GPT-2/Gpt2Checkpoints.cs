@@ -1,4 +1,4 @@
-﻿namespace Gradient.Samples.GPT2 {
+﻿namespace LostTech.Gradient.Samples.GPT2 {
     using System;
     using System.Collections.Generic;
     using System.IO;
@@ -11,7 +11,7 @@
             string latestCheckpoint = run is null
                 ? null
                 : tf.train.latest_checkpoint(Path.GetFullPath(Path.Combine(gpt2Root, CheckpointDir, run)));
-            latestCheckpoint = latestCheckpoint ?? GetOriginalCheckpoint(gpt2Root, modelName);
+            latestCheckpoint ??= GetOriginalCheckpoint(gpt2Root, modelName);
             return latestCheckpoint;
         }
 

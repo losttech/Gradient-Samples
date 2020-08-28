@@ -1,4 +1,4 @@
-﻿namespace Gradient.Samples {
+﻿namespace LostTech.Gradient.Samples {
     using System;
     using System.Diagnostics;
     using numpy;
@@ -11,7 +11,6 @@
         public static void Run(int epochs = 5) {
             // requires Internet connection
             (dynamic train, dynamic test) = tf.keras.datasets.fashion_mnist.load_data();
-            // will be able to do (trainImages, trainLabels) = train;
             ndarray trainImages = np.expand_dims(train.Item1 / 255.0f, axis: 3);
             ndarray trainLabels = train.Item2;
             ndarray testImages = np.expand_dims(test.Item1 / 255.0f, axis: 3);
@@ -21,7 +20,6 @@
             Debug.Assert(loaded);
 
             var model = new Sequential(new Layer[] {
-                // will be able to do: new Flatten(kwargs: new { input_shape = (28, 28) }),
                 new ResNetBlock(kernelSize: 3, filters: new [] { 1, 2, 3 }),
                 new ResNetBlock(kernelSize: 3, filters: new [] { 1, 2, 3 }),
                 new Flatten(),
@@ -31,7 +29,7 @@
             model.compile(
                 optimizer: new AdamOptimizer(),
                 loss: "sparse_categorical_crossentropy",
-                metrics: new dynamic[] { "accuracy" });
+                metrics: new [] { "accuracy" });
 
             model.fit(trainImages, trainLabels, epochs: epochs);
 

@@ -1,4 +1,4 @@
-﻿namespace Gradient.Samples.SoftActorCritic {
+﻿namespace LostTech.Gradient.Samples.SoftActorCritic {
     using System;
     using tensorflow;
 

@@ -1,4 +1,4 @@
-﻿namespace Gradient.Samples {
+﻿namespace LostTech.Gradient.Samples {
     using System;
     using System.Collections.Generic;
     using mlagents_envs.base_env;
@@ -14,8 +14,8 @@
             this.unityEnvironment = unityEnvironment ?? throw new ArgumentNullException(nameof(unityEnvironment));
         }
 
-        public AgentGroupSpec GetAgentGroup(string? name) => this.unityEnvironment.get_agent_group_spec(name);
-        public BatchedStepResult GetStepResult(string? agentGroupName) => this.unityEnvironment.get_step_result(agentGroupName);
+        public BehaviorSpec GetAgentGroup(string? name) => this.unityEnvironment.behavior_specs[name];
+        public (DecisionSteps, TerminalSteps) GetStepResult(string? agentGroupName) => this.unityEnvironment.get_steps(agentGroupName);
         public void Reset() => this.unityEnvironment.reset();
         public void SetActions(string? agentGroupName, ndarray actions) => this.unityEnvironment.set_actions(agentGroupName, actions);
         public void Step() => this.unityEnvironment.step();

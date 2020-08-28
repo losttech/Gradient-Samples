@@ -1,4 +1,4 @@
-﻿namespace Gradient.Samples {
+﻿namespace LostTech.Gradient.Samples {
     using System;
     using System.Drawing;
     using System.IO;
@@ -18,7 +18,7 @@
             return new Sequential(new Layer[] {
                 new Dropout(rate: 0.05),
                 Conv2D.NewDyn(filters: filterCount, kernel_size: 5, padding: "same"),
-                Activation.NewDyn(activation),
+                new Activation(activation),
                 new MaxPool2D(pool_size: 2),
                 new ResNetBlock(kernelSize: 3, filters: resNetFilters, activation: activation),
                 new ResNetBlock(kernelSize: 3, filters: resNetFilters, activation: activation),
@@ -53,8 +53,8 @@
         };
 
         public static ndarray<float> GreyscaleImageBytesToNumPy(byte[] inputs, int imageCount, int width, int height)
-            => (ndarray<float>)(inputs.Select(b => (float)b).ToArray().ToNumPyArray()
-                .reshape(new[] { imageCount, height, width, 1 }) / 255.0f);
+            => (ndarray<float>)inputs.Select(b => b/255.0f).ToArray().ToNumPyArray()
+                .reshape(new[] { imageCount, height, width, 1 });
 
         public static string[] ReadCode(string filePath)
             => File.ReadAllLines(filePath)

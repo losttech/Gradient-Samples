@@ -1,10 +1,11 @@
-namespace Gradient.Samples.GPT2
+namespace LostTech.Gradient.Samples.GPT2
 {
     using System;
     using System.Collections.Generic;
     using System.IO;
     using System.Linq;
     using System.Text;
+    using LostTech.TensorFlow;
     using MoreLinq;
     using Newtonsoft.Json;
     using numpy;
@@ -20,11 +21,15 @@ namespace Gradient.Samples.GPT2
         readonly Dictionary<byte, char> byteEncoder;
         readonly Dictionary<char, byte> byteDecoder;
         readonly Dictionary<(string,string), float> bpeRanks;
-
-        static readonly dynamic noop = tensorflow.tf.no_op(); // ensure Gradient is initialized
-        static readonly dynamic regex = Py.Import("regex");
-        static readonly dynamic pattern = regex.compile(@"'s|'t|'re|'ve|'m|'ll|'d| ?\p{L}+| ?\p{N}+| ?[^\s\p{L}\p{N}]+|\s+(?!\S)|\s+");
+        static readonly dynamic regex, pattern;
         static readonly Dictionary<byte, char> BytesToUnicode = ComputeBytesToUnicode();
+
+        static Gpt2Encoder() {
+            TensorFlowSetup.Instance.EnsureInitialized();
+            using var _ = Py.GIL();
+            regex = Py.Import("regex");
+            pattern = regex.compile(@"'s|'t|'re|'ve|'m|'ll|'d| ?\p{L}+| ?\p{N}+| ?[^\s\p{L}\p{N}]+|\s+(?!\S)|\s+");
+        }
 
         public string EncodedEndOfText => this.encoder[EndOfTextPseudoToken];
 
@@ -145,6 +150,7 @@ namespace Gradient.Samples.GPT2
         public List<string> Encode(string text)
         {
             var bpeTokens = new List<string>();
+            using var _ = Py.GIL();
             foreach(string token in regex.findall(pattern, text))
             {
                 string encoded = new string(Encoding.UTF8.GetBytes(token)

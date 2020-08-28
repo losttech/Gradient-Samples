@@ -1,10 +1,10 @@
 ﻿// ported from https://github.com/openai/spinningup/blob/0cba2886047b7de82c2cad4321df5875db644d61/spinup/algos/tf1/sac/sac.py#L42
-namespace Gradient.Samples.SoftActorCritic {
+namespace LostTech.Gradient.Samples.SoftActorCritic {
     using System;
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.Linq;
-    using Gradient;
+    using LostTech.Gradient;
     using numpy;
     using tensorflow;
     using tensorflow.train;
@@ -81,6 +81,7 @@ namespace Gradient.Samples.SoftActorCritic {
 
             env.Reset();
             var stepResult = env.GetStepResult(agentGroup);
+            (int agentCount, int _) = ((int, int))((ndarray)stepResult.Item1.obs[0]).shape;
 
             var input = Placeholder(observationDimensions*feedFrames);
             var actionVariable = Placeholder(actionDimensions);
@@ -118,8 +119,8 @@ namespace Gradient.Samples.SoftActorCritic {
             var replayBuffer = new ReplayBuffer(
                 observationDimensions: observationDimensions*feedFrames,
                 actionDimensions: actionDimensions,
-                size: replaySize*stepResult.n_agents(),
-                batchSize: stepResult.n_agents());
+                size: replaySize*agentCount,
+                batchSize: agentCount);
 
 #if DEBUG
             Console.WriteLine("Number of parameters:");
@@ -161,12 +162,15 @@ namespace Gradient.Samples.SoftActorCritic {
             Operation targetUpdate;
             using (var _ = CM.StartUsing(tf.control_dependencies(new[] { trainValue })))
                 targetUpdate = tf.group(
-                    Enumerable.Select(GetVariables("main").Zip(GetVariables("target")), ((Variable main, Variable target)v)
-                    => tf.assign(v.target, v.target * (dynamic)polyak + v.main * (dynamic)(1-polyak), name: "targetUpdate")));
+                    GetVariables("main").Zip(GetVariables("target"))
+                    .Select(((Variable main, Variable target)v)
+                        => tf.assign(v.target, v.target * (dynamic)polyak + v.main * (dynamic)(1-polyak), name: "targetUpdate"))
+                    .ToArray());
 
             var targetInit = tf.group(
                 GetVariables("main").Zip(GetVariables("target"))
-                .Select(((Variable main, Variable target) v) => tf.assign(v.target, v.main)));
+                .Select(((Variable main, Variable target) v) => tf.assign(v.target, v.main))
+                .ToArray());
 
             var session = new Session();
             session.run(tf.global_variables_initializer());
@@ -180,34 +184,35 @@ namespace Gradient.Samples.SoftActorCritic {
                 });
             }
 
-            var stopwatch = Stopwatch.StartNew();
-
-            var observation = (ndarray<float>)((ndarray)stepResult.obs[0]).repeat(feedFrames, axis: 1);
-            ndarray episodeReward = np.zeros(stepResult.n_agents());
+            var observation = ((ndarray)stepResult.Item1.obs[0]).repeat(feedFrames, axis: 1).AsArray<float>();
+            ndarray episodeReward = np.zeros(agentCount);
             int episodeLength = 0;
             int totalSteps = stepsPerEpoch * epochs;
 
-            var newObservation = (ndarray<float>)np.zeros_like(observation);
+            var newObservation = np.zeros_like(observation).AsArray<float>();
             float aiAction = 0;
             float inducedAction = 0;
-            Tools.Dispose(stepResult);
             foreach (int stepN in Range(0, totalSteps)) {
 #if DEBUG
-                if (stepN == startSteps + 1)
+                if (stepN == startSteps + 1) {
                     Console.WriteLine("\nswitched from random actions to learned policy\n");
+                    Console.Title = "ML Agents: AI in control";
+                }
 #endif
                 var action = stepN > startSteps
                     ? GetAction(observation, deterministic: stepN % 2 == 0)
                     : actionSampler();
-                aiAction += (float)(float32)action.__abs__().sum();
+                aiAction += action.__abs__().sum().AsScalar<float>();
 
-                env.SetActions(agentGroup, action);
+                if (!stepResult.IsDone())
+                    env.SetActions(agentGroup, action);
                 env.Step();
-                var step = env.GetStepResult(agentGroup);
-                var newFrame = (ndarray<float>)step.obs[0];
+                stepResult = env.GetStepResult(agentGroup);
+                var newFrame = (ndarray<float>)(stepResult.IsDone() ? stepResult.Item2.obs[0] : stepResult.Item1.obs[0]);
+                var agents = stepResult.IsDone() ? stepResult.Item2.agent_id : stepResult.Item1.agent_id;
                 if (feedFrames > 1) {
                     // TODO: simplifying this depends on https://github.com/dotnet/csharplang/issues/3126
-                    for (int agent = 0; agent < step.n_agents(); agent++) {
+                    for (int agent = 0; agent < agentCount; agent++) {
                         for (int observationDim = 0; observationDim < observationDimensions; observationDim++) {
                             for (int frame = 1; frame < feedFrames; frame++)
                                 newObservation[agent, (frame - 1) * observationDimensions + observationDim]
@@ -217,25 +222,30 @@ namespace Gradient.Samples.SoftActorCritic {
                                 = newFrame[agent, observationDim];
                         }
                     }
-                    Debug.Assert(newObservation[3, 2].__eq__(observation[3, 2 + observationDimensions]));
-                    Tools.Dispose(newFrame);
+                    Debug.Assert(newObservation[3, 2].__eq__(observation[3, 2 + observationDimensions]).all());
                 } else {
-                    newObservation = newFrame;
+                    newObservation[agents] = newFrame;
                 }
 
-                var done = (ndarray)step.done.astype(PythonClassContainer<float32>.Instance);
+                // set done to 1 for the agents, which no longer participate
+                // e.g. when observation/reward are undefined
+                var done = np.zeros<float>((uint)agentCount);
+                if (stepResult.IsDone())
+                    done[agents] = new float32(1);
+                var reward = np.zeros<float>((uint)agentCount);
+                reward[agents] = stepResult.IsDone() ? stepResult.Item2.reward : stepResult.Item1.reward;
                 episodeLength++;
-                episodeReward += (dynamic)step.reward;
+                episodeReward.__iadd__(reward);
+
+                Debug.Assert((bool)observation.shape.Equals(newObservation.shape));
 
                 replayBuffer.Store(new ReplayBuffer.Observation{
                     observation = observation,
                     newObservation = newObservation,
                     action = action,
-                    reward = step.reward,
+                    reward = reward,
                     done = done,
                 });
-
-                Dispose(action);
 
                 np.copyto(observation, source: newObservation);
 
@@ -245,7 +255,7 @@ namespace Gradient.Samples.SoftActorCritic {
                     Console.WriteLine($"replay buffer: {replayBuffer.Size*100/replayBuffer.Capacity}%");
                     Console.Write("training...");
                     foreach(int trainingStep in Range(0, updateEvery)) {
-                        using var batch = replayBuffer.SampleBatch(batchSize);
+                        var batch = replayBuffer.SampleBatch(batchSize);
                         var feedDict = new Dictionary<object, object> {
                             [input] = batch.observation,
                             [input2] = batch.newObservation,
@@ -266,13 +276,13 @@ namespace Gradient.Samples.SoftActorCritic {
 
                         if (trainingStep + 1 == episodeLength)
                             Console.WriteLine($"loss: q1: {outs[1]}; q2: {outs[2]}; logp_pi: {outs[0]}");
-                        Dispose(outs);
                     }
 
                     aiAction = inducedAction = 0;
                     env.Reset();
-                    step = env.GetStepResult(agentGroup);
-                    observation = (ndarray<float>)((ndarray)step.obs[0]).repeat(feedFrames, axis: 1);
+                    stepResult = env.GetStepResult(agentGroup);
+                    newFrame = (ndarray<float>)(stepResult.IsDone() ? stepResult.Item2.obs[0] : stepResult.Item1.obs[0]);
+                    observation = newFrame.repeat(feedFrames, axis: 1).AsArray<float>();
                     episodeReward.fill_dyn(0);
                     episodeLength = 0;
                     Console.WriteLine("\n");

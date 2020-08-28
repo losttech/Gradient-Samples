@@ -5,11 +5,11 @@
     <TargetFramework>netcoreapp2.1</TargetFramework>
     <LangVersion>8.0</LangVersion>
     <AssemblyName>SimpleApproximation</AssemblyName>
-    <RootNamespace>Gradient.Samples</RootNamespace>
+    <RootNamespace>LostTech.Gradient.Samples</RootNamespace>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Gradient" Version="0.15.7.2" />
+    <PackageReference Include="LostTech.TensorFlow" Version="1.15.0-RC1" />
   </ItemGroup>
 
 </Project>

@@ -1,7 +1,7 @@
-﻿namespace Gradient.Samples {
+﻿namespace LostTech.Gradient.Samples {
     using System;
     using System.Collections.Generic;
-    using Gradient.BuiltIns;
+    using LostTech.Gradient.BuiltIns;
 
     static class PythonListExtensions {
         public static PythonList<T> ToPyList<T>(this IEnumerable<T> enumerable) {

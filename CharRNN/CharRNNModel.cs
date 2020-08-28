@@ -3,9 +3,8 @@
     using System.Collections.Generic;
     using System.Linq;
     using CommandLine;
-    using Gradient;
-    using Gradient.ManualWrappers;
-    using SharPy.Runtime;
+    using LostTech.Gradient;
+    using LostTech.Gradient.ManualWrappers;
     using numpy;
     using tensorflow;
     using tensorflow.contrib.optimizer_v2.adam;
@@ -61,7 +60,7 @@
             });
 
             Variable embedding = tf.get_variable("embedding", new TensorShape(parameters.VocabularySize, parameters.RNNSize));
-            Tensor input = tf.nn.embedding_lookup_dyn(embedding, this.inputData);
+            Tensor input = tf.nn.embedding_lookup_dyn(embedding, ids: this.inputData);
 
             // dropout beta testing: double check which one should affect next line
             if (training && parameters.KeepOutputProbability < 1)
@@ -77,7 +76,7 @@
             }
             var decoder = tensorflow.contrib.legacy_seq2seq.legacy_seq2seq.rnn_decoder_dyn(
                 decoder_inputs: inputs,
-                initial_state: this.initialState.Items(),
+                initial_state: this.initialState,
                 cell: this.rnn,
                 loop_function: training ? null : PythonFunctionContainer.Of(new Func<dynamic, dynamic, dynamic>(Loop)), scope: "rnnlm");
             IList<Tensor> outputs = decoder.Item1;
@@ -86,7 +85,7 @@
             var output = tf.reshape(concatenatedOutputs, new[] { -1, parameters.RNNSize });
 
             this.logits = tf.matmul(output, softmax_W) + softmax_b;
-            this.probs = tf.nn.softmax_dyn(new[] { this.logits });
+            this.probs = tf.nn.softmax(new[] { this.logits });
             this.loss = tensorflow.contrib.legacy_seq2seq.legacy_seq2seq.sequence_loss_by_example_dyn(
                 logits: new[] { this.logits },
                 targets: new[] { tf.reshape(this.targets, new[] { -1 }) },
@@ -101,8 +100,8 @@
             this.learningRate = new Variable(0.0, trainable: false);
 
             IEnumerable<Variable> tvars = tf.trainable_variables();
-            IEnumerable<object> grads = tf.gradients_dyn(this.cost, tvars);
-            grads = tf.clip_by_global_norm(grads.Cast<IGraphNodeBase>(), parameters.GradientClip).Item1;
+            IList<IGraphNodeBase> grads = tf.gradients_dyn(this.cost, tvars);
+            grads = tf.clip_by_global_norm(grads, parameters.GradientClip).Item1;
             AdamOptimizer optimizer = null;
             new name_scope("optimizer").UseSelf(_ => optimizer = AdamOptimizer.NewDyn(this.learningRate));
             this.trainOp = optimizer.apply_gradients(grads.Zip(tvars, (grad, @var) => (dynamic)(grad, @var)));
@@ -130,7 +129,7 @@
             for (int i = 0; i < num; i++) {
                 var x = np.zeros<int>(new ulong[] { 1, 1 });
                 x[0, 0] = vocabulary[chr];
-                var feed = new PythonDict<dynamic, dynamic> {
+                var feed = new Dictionary<dynamic, dynamic> {
                     [this.inputData] = x,
                     [this.initialState] = state,
                 };
@@ -165,7 +164,7 @@
             foreach (char chr in prime.Substring(0, prime.Length - 1)) {
                 var x = np.zeros<int>(new ulong[] { 1, 1 });
                 x[0, 0] = vocabulary[chr];
-                var feed = new PythonDict<dynamic, dynamic> {
+                var feed = new Dictionary<dynamic, dynamic> {
                     [this.inputData] = x,
                     [this.initialState] = state,
                 };

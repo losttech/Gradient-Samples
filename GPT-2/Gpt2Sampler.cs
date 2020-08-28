@@ -1,10 +1,8 @@
-﻿namespace Gradient.Samples.GPT2
+﻿namespace LostTech.Gradient.Samples.GPT2
 {
     using System;
     using System.Collections.Generic;
     using System.Linq;
-    using Gradient.ManualWrappers;
-    using numpy;
     using tensorflow;
     using tensorflow.contrib.training;
     using tensorflow.python.framework.dtypes;
@@ -20,15 +18,15 @@
 
             Tensor TopK()
             {
-                var valuesIndices = tf.nn.top_k_dyn(logits, k: topK);
+                var valuesIndices = tf.nn.top_k(logits, k: topK);
                 var values = valuesIndices[0];
-                Tensor minValues = values[Range.All, -1, tf.newaxis];
+                Tensor minValues = values[.., ^0, tf.newaxis];
                 return tf.where(logits < minValues,
                     tf.ones_like(logits, dtype: logits.dtype) * -1e10,
                     logits);
             }
 
-            Tensor isTopKZero = tf.equal_dyn(topK, 0);
+            Tensor isTopKZero = tf.equal(topK, 0);
             return tf.cond(isTopKZero,
                 true_fn: PythonFunctionContainer.Of(() => logits),
                 false_fn: PythonFunctionContainer.Of(TopK));
@@ -45,10 +43,10 @@
             {
                 var lmOutput = Gpt2Model.Model(hParams: @params, input: tokens, past: past, reuse: _ReuseMode.AUTO_REUSE);
 
-                var logits = lmOutput["logits"][Range.All, Range.All, Range.EndAt((int)@params.get("n_vocab"))];
+                var logits = lmOutput["logits"][.., .., Range.EndAt((int)@params.get("n_vocab"))];
                 Tensor presents = lmOutput["present"];
                 int?[] pastShape = Gpt2Model.PastShape(hParams: @params, batchSize: batchSize);
-                presents.set_shape_(pastShape.Cast<object>());
+                presents.set_shape_(new TensorShape(pastShape));
 
                 return new SortedDictionary<string, object>
                 {
@@ -63,14 +61,14 @@
                 // Don't feed the last context token -- leave that to the loop below
                 // TODO: Would be slightly faster if we called step on the entire context,
                 // rather than leaving the last token transformer calculation to the while loop.
-                var contextOutput = Step(hParams, context[Range.All, Range.EndAt(new Index(1, fromEnd: true))]);
+                var contextOutput = Step(hParams, context[.., Range.EndAt(new Index(1, fromEnd: true))]);
 
                 Tensor[] Body(object past, dynamic prev, object output)
                 {
-                    var nextOutputs = Step(hParams, prev[Range.All, tf.newaxis], past: past);
-                    Tensor logits = nextOutputs["logits"][Range.All, -1, Range.All] / tf.constant(temperature, dtypes.float32_ref);
+                    var nextOutputs = Step(hParams, prev[.., tf.newaxis], past: past);
+                    Tensor logits = nextOutputs["logits"][.., ^0, ..] / tf.constant(temperature, dtypes.float32_ref);
                     logits = TopLogits(logits, topK: topK);
-                    var samples = tf.multinomial_dyn(logits, num_samples: 1, output_dtype: tf.int32);
+                    var samples = tf.multinomial(logits, num_samples: 1, output_dtype: tf.int32);
                     return new Tensor[]
                     {
                         tf.concat(new []{ past, nextOutputs["presents"]}, axis: -2),
@@ -83,7 +81,7 @@
 
                 dynamic[] loopVars = new[]{
                     contextOutput["presents"],
-                    context[Range.All, -1],
+                    context[.., ^0],
                     context,
                 };
                 TensorShape[] shapeInvariants = new[]{

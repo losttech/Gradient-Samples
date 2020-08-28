@@ -1,4 +1,4 @@
-﻿namespace Gradient.Samples.GPT2 {
+﻿namespace LostTech.Gradient.Samples.GPT2 {
     using System;
     using System.Collections.Generic;
     using System.Diagnostics;
@@ -36,9 +36,8 @@
                     string rawText = File.ReadAllText(file);
                     if (String.IsNullOrWhiteSpace(rawText))
                         continue;
-                    dynamic numpy = Py.Import("numpy");
-                    PyObject tokens = numpy.stack(encoder.Encode(rawText));
-                    tokenChunks.Add(ndarray.Wrap(tokens));
+                    var tokens = np.stack(encoder.Encode(rawText));
+                    tokenChunks.Add(tokens);
                 }
             }
 

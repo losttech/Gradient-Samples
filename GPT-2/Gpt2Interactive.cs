@@ -1,16 +1,15 @@
-﻿namespace Gradient.Samples.GPT2
+﻿namespace LostTech.Gradient.Samples.GPT2
 {
     using System;
     using System.Collections.Generic;
     using System.IO;
     using System.Linq;
+    using System.Threading;
     using ManyConsole.CommandLineUtils;
     using numpy;
-    using Python.Runtime;
-    using SharPy.Runtime;
     using tensorflow;
+    using tensorflow.errors;
     using tensorflow.train;
-    using PythonException = Python.Runtime.PythonException;
 
     class Gpt2Interactive: ConsoleCommand
     {
@@ -64,14 +63,21 @@
                 checkpoint = checkpoint ?? tf.train.latest_checkpoint(Path.Combine("models", modelName));
                 saver.restore(sess, checkpoint);
 
-                while (true) {
+                bool interrupted = false;
+                Console.CancelKeyPress += (object sender, ConsoleCancelEventArgs args) =>
+                    Volatile.Write(ref interrupted, args.Cancel = true);
+
+                while (!interrupted) {
                     string text;
                     do {
                         Console.Write("Model prompt >>> ");
                         text = Console.ReadLine();
+                        if (Volatile.Read(ref interrupted)) break;
                         if (string.IsNullOrEmpty(text))
-                            Console.Error.WriteLine("Prompt should not be empty");
-                    } while (string.IsNullOrEmpty(text));
+                            Console.WriteLine("Prompt should not be empty");
+                    } while (!Volatile.Read(ref interrupted) && string.IsNullOrEmpty(text));
+
+                    if (Volatile.Read(ref interrupted)) break;
 
                     var contextTokens = encoder.Encode(text);
                     if (!tf.test.is_gpu_available() && contextTokens.Count >= length.Value) {
@@ -84,11 +90,10 @@
                     foreach (var _ in Enumerable.Range(0, sampleCount / batchSize)) {
                         ndarray<int> @out;
                         try {
-                            @out = sess.run(output,
-                                feed_dict: new PythonDict<object, object> {
-                                    [context] = Enumerable.Repeat(contextTokens, batchSize),
-                                })[Range.All, Range.StartAt(contextTokens.Count)];
-                        } catch (PythonException ex) when (ex.Message.StartsWith("InvalidArgumentError : indices[0,0] =", StringComparison.Ordinal)) {
+                            @out = sess.run(output, feed_dict: new Dictionary<object, object> {
+                                [context] = Enumerable.Repeat(contextTokens, batchSize).ToArray(),
+                            })[.., contextTokens.Count..];
+                        } catch (InvalidArgumentError ex) {
                             throw new ArgumentOutOfRangeException(
                                 "Unable to generate sequence of desired length. "
                                 + "Try lowering length by passing -l (-sample-length) parameter. "

@@ -1,8 +1,8 @@
 ﻿// ported from https://github.com/openai/spinningup/blob/0cba2886047b7de82c2cad4321df5875db644d61/spinup/algos/tf1/sac/core.py#L64
-namespace Gradient.Samples.SoftActorCritic {
+namespace LostTech.Gradient.Samples.SoftActorCritic {
     using System;
     using System.Linq;
-    using Gradient;
+    using LostTech.Gradient;
     using tensorflow;
     using PyFunc = Gradient.PythonFunctionContainer;
     using static Tools;
@@ -52,7 +52,7 @@ namespace Gradient.Samples.SoftActorCritic {
 
             using (new variable_scope("pi").StartUsing()) {
                 using(new variable_scope("policy").StartUsing())
-                    this.policy = policyFactory(input, action.shape.as_list()[-1], hiddenSizes, innerActivation, outputActivation);
+                    this.policy = policyFactory(input, action.shape.as_list()[-1].Value, hiddenSizes, innerActivation, outputActivation);
                 using(new variable_scope("squashing").StartUsing())
                     this.policy = Policies.ApplySquashing(this.policy);
             }

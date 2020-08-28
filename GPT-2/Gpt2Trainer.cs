@@ -1,19 +1,14 @@
 ﻿// ported from https://github.com/nshepperd/gpt-2
 
-namespace Gradient.Samples.GPT2 {
+namespace LostTech.Gradient.Samples.GPT2 {
     using System;
     using System.Collections.Generic;
-    using System.Diagnostics;
     using System.Globalization;
     using System.IO;
     using System.Linq;
     using System.Threading;
-
+    using LostTech.Gradient.BuiltIns;
     using numpy;
-
-    using Python.Runtime;
-
-    using SharPy.Runtime;
 
     using tensorflow;
     using tensorflow.contrib.training;
@@ -54,8 +49,8 @@ namespace Gradient.Samples.GPT2 {
             sess.UseSelf(session => {
                 var context = tf.placeholder(tf.int32, new TensorShape(this.batchSize, null));
                 var output = Gpt2Model.Model(this.hParams, input: context);
-                Tensor labels = context[Range.All, Range.StartAt(1)];
-                Tensor logits = output["logits"][Range.All, Range.EndAt(new Index(1, fromEnd: true))];
+                Tensor labels = context[.., 1..];
+                Tensor logits = output["logits"][.., Range.EndAt(new Index(1, fromEnd: true))];
                 var loss = tf.reduce_mean(
                     tf.nn.sparse_softmax_cross_entropy_with_logits_dyn(
                         labels: labels,
@@ -69,7 +64,7 @@ namespace Gradient.Samples.GPT2 {
                     temperature: 1.0f,
                     topK: 40);
 
-                var trainVars = ((IEnumerable<Variable>)tf.trainable_variables()).Where(var => var.name.Contains("model"));
+                var trainVars = ((PythonList<Variable>)tf.trainable_variables()).Where(var => var.name.Contains("model")).ToPyList();
                 var optimizer = new AdamOptimizer(learning_rate: 0.0002).minimize(loss, var_list: trainVars);
 
                 var saver = new Saver(
@@ -109,7 +104,7 @@ namespace Gradient.Samples.GPT2 {
                     int index = 0;
                     string text = null;
                     while (index < this.SampleNum) {
-                        ndarray<int> @out = session.run(sample, feed_dict: new PythonDict<object, object> {
+                        ndarray<int> @out = session.run(sample, feed_dict: new Dictionary<object, object> {
                             [context] = Enumerable.Repeat(contextTokens, this.batchSize),
                         });
                         foreach (int i in Enumerable.Range(0, Math.Min(this.SampleNum - index, this.batchSize))) {
@@ -139,7 +134,7 @@ namespace Gradient.Samples.GPT2 {
                         .Select(_ => sampler.Sample(1024))
                         .ToArray();
 
-                    var placeholderValues = new PythonDict<object, object> {
+                    var placeholderValues = new Dictionary<object, object> {
                         [context] = batch,
                     };
                     var tuple = session.run((optimizer, loss), feed_dict: placeholderValues);
