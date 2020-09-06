@@ -45,3 +45,8 @@ using Soft Actor-Critic algorithm, and Unity ML agents library. More details in
 All models **can be modified and trained**.
 
 **LICENSE** - MIT, individual samples might have different licenses (clearing that up, see individual sample folders).
+
+# See Also
+
+[**SIREN**](https://github.com/losttech/Siren) - neural representation
+for any kind of signal (image, video, audio).
