@@ -20,7 +20,7 @@
             {
                 var valuesIndices = tf.nn.top_k(logits, k: topK);
                 var values = valuesIndices[0];
-                Tensor minValues = values[.., ^0, tf.newaxis];
+                Tensor minValues = values[.., ^1, tf.newaxis];
                 return tf.where(logits < minValues,
                     tf.ones_like(logits, dtype: logits.dtype) * -1e10,
                     logits);
@@ -43,7 +43,7 @@
             {
                 var lmOutput = Gpt2Model.Model(hParams: @params, input: tokens, past: past, reuse: _ReuseMode.AUTO_REUSE);
 
-                var logits = lmOutput["logits"][.., .., Range.EndAt((int)@params.get("n_vocab"))];
+                var logits = lmOutput["logits"][.., .., ..@params.get("n_vocab")];
                 Tensor presents = lmOutput["present"];
                 int?[] pastShape = Gpt2Model.PastShape(hParams: @params, batchSize: batchSize);
                 presents.set_shape_(new TensorShape(pastShape));
@@ -56,17 +56,17 @@
             }
 
             Tensor result = null;
-            new name_scope("sample_sequence").Use(_ =>
+            using (new name_scope("sample_sequence").StartUsing())
             {
                 // Don't feed the last context token -- leave that to the loop below
                 // TODO: Would be slightly faster if we called step on the entire context,
                 // rather than leaving the last token transformer calculation to the while loop.
-                var contextOutput = Step(hParams, context[.., Range.EndAt(new Index(1, fromEnd: true))]);
+                var contextOutput = Step(hParams, context[.., ..^1]);
 
                 Tensor[] Body(object past, dynamic prev, object output)
                 {
                     var nextOutputs = Step(hParams, prev[.., tf.newaxis], past: past);
-                    Tensor logits = nextOutputs["logits"][.., ^0, ..] / tf.constant(temperature, dtypes.float32_ref);
+                    Tensor logits = nextOutputs["logits"][.., ^1, ..] / tf.constant(temperature, dtypes.float32_ref);
                     logits = TopLogits(logits, topK: topK);
                     var samples = tf.multinomial(logits, num_samples: 1, output_dtype: tf.int32);
                     return new Tensor[]
@@ -81,13 +81,13 @@
 
                 dynamic[] loopVars = new[]{
                     contextOutput["presents"],
-                    context[.., ^0],
+                    context[.., ^1],
                     context,
                 };
                 TensorShape[] shapeInvariants = new[]{
                     new TensorShape(Gpt2Model.PastShape(hParams: hParams, batchSize: batchSize)),
                     new TensorShape(batchSize),
-                    new TensorShape((int?)batchSize, (int?)null),
+                    new TensorShape(batchSize, null),
                 };
                 Tensor maxTokens = tf.constant(length);
                 // for some reason on CPU you can't sample longer texts
@@ -105,7 +105,7 @@
                     shape_invariants: shapeInvariants,
                     back_prop: false)
                     [2];
-            });
+            }
             return result;
         }
     }

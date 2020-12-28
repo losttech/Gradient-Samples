@@ -12,6 +12,6 @@
   <ItemGroup>
     <PackageReference Include="FSharp.Interop.Dynamic" Version="5.0.1.268" />
     <PackageReference Include="LostTech.Gradient.FSharp" Version="0.1.0" />
-    <PackageReference Include="LostTech.TensorFlow" Version="1.15.0-RC1" />
+    <PackageReference Include="LostTech.TensorFlow" Version="1.15.0" />
   </ItemGroup>
 </Project>

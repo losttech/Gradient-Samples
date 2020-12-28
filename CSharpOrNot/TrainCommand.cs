@@ -97,10 +97,10 @@
             fromCheckpoint.build(new TensorShape(null, Height, Width, 1));
             fromCheckpoint.load_weights(Path.GetFullPath("weights.best.hdf5"));
 
-            var evaluationResults = fromCheckpoint.evaluate(@in, expectedOut);
+            var evaluationResults = fromCheckpoint.evaluate(@in, (ndarray)expectedOut);
             Console.WriteLine($"reloaded: loss: {evaluationResults[0]} acc: {evaluationResults[1]}");
 
-            evaluationResults = model.evaluate(@in, expectedOut);
+            evaluationResults = model.evaluate(@in, (ndarray)expectedOut);
             Console.WriteLine($"original: loss: {evaluationResults[0]} acc: {evaluationResults[1]}");
 
             return 0;

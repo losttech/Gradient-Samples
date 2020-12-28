@@ -52,7 +52,7 @@ namespace LostTech.Gradient.Samples.SoftActorCritic {
 
             using (new variable_scope("pi").StartUsing()) {
                 using(new variable_scope("policy").StartUsing())
-                    this.policy = policyFactory(input, action.shape.as_list()[-1].Value, hiddenSizes, innerActivation, outputActivation);
+                    this.policy = policyFactory(input, action.shape.as_list()[^1].Value, hiddenSizes, innerActivation, outputActivation);
                 using(new variable_scope("squashing").StartUsing())
                     this.policy = Policies.ApplySquashing(this.policy);
             }

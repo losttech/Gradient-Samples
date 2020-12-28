@@ -51,7 +51,7 @@
         static Tensor Norm(Tensor input, object scope, int axis = -1, double epsilon = 1e-5)
         {
             Tensor result = null;
-            new variable_scope(scope).Use(_ =>
+            using (new variable_scope(scope).StartUsing())
             {
                 Dimension nState = input.shape[-1];
                 Variable g = tf.get_variable("g", new TensorShape(nState), initializer: new constant_initializer(1));
@@ -60,7 +60,7 @@
                 Tensor s = tf.reduce_mean(tf.square(input - mean), axis: axis, keepdims: true);
                 result = (input - mean) * tf.rsqrt(s + epsilon);
                 result = result * g + b;
-            });
+            }
             return result;
         }
 
@@ -90,7 +90,7 @@
         static Tensor Conv1D(Tensor input, object scope, int nf, double wInitialStDev = 0.02)
         {
             Tensor result = null;
-            new variable_scope(scope).Use(_ =>
+            using (new variable_scope(scope).StartUsing())
             {
                 var shape = ShapeList(input);
                 var start = shape.Take(shape.Count - 1);
@@ -103,7 +103,7 @@
                         tf.reshape_dyn(input, new[] { -1, nx }),
                         tf.reshape(w, new[] { -1, nf })) + b,
                     start.Append(nf).ToArray());
-            });
+            }
             return result;
         }
 
@@ -160,7 +160,7 @@
 
             Tensor attention = null;
             Tensor present = null;
-            new variable_scope(scope).Use(_ =>
+            using (new variable_scope(scope).StartUsing())
             {
                 var c = Conv1D(input, "c_attn", nState * 3);
                 var qkv = ((IEnumerable)tf.split(c, 3, axis: 2)).Cast<Tensor>().Select(SplitHeads).ToArray();
@@ -179,7 +179,7 @@
                 attention = MultiHeadAttention(q, k, v);
                 attention = MergeHeads(attention);
                 attention = Conv1D(attention, "c_proj", nState);
-            });
+            }
 
             return ValueTuple.Create(attention, present);
         }
@@ -187,12 +187,12 @@
         static Tensor MLP(Tensor input, string scope, int nState, dynamic hParams = null)
         {
             Tensor result = null;
-            new variable_scope(scope).Use(_ =>
+            using (new variable_scope(scope).StartUsing())
             {
                 int nx = input.shape[-1].value;
                 var h = GeLU(Conv1D(input, "c_fc", nState));
                 result = Conv1D(h, "c_proj", nx);
-            });
+            }
             return result;
         }
 
@@ -200,7 +200,7 @@
         {
             Tensor result = null;
             Tensor present = null;
-            new variable_scope(scope).Use(_ =>
+            using (new variable_scope(scope).StartUsing())
             {
                 int nx = input.shape[-1].value;
                 var attentionPresent = Attention(Norm(input, "ln_1"), "attn", nx, past: past, hParams: hParams);
@@ -210,7 +210,7 @@
                 var m = MLP(Norm(input, "ln_2"), "mlp", nx * 4, hParams: hParams);
                 input += m;
                 result = input;
-            });
+            }
             return ValueTuple.Create(result, present);
         }
 
@@ -253,7 +253,7 @@
         public static Dictionary<string, Tensor> Model(dynamic hParams, Tensor input, dynamic past = null, string scope = "model", object reuse = null)
         {
             var result = new Dictionary<string, Tensor>();
-            new variable_scope(scope, reuse: reuse).Use(_ =>
+            using (new variable_scope(scope, reuse: reuse).StartUsing())
             {
                 var batchSeq = ShapeList(input);
                 int batch = batchSeq[0];
@@ -262,7 +262,7 @@
                 var wpe = tf.get_variable("wpe", new TensorShape((int)hParams.n_ctx, (int)hParams.n_embd), initializer: new random_normal_initializer(stddev: 0.01));
                 var wte = tf.get_variable("wte", new TensorShape((int)hParams.n_vocab, (int)hParams.n_embd), initializer: new random_normal_initializer(stddev: 0.02));
 
-                Tensor pastLen = past is null ? tf.constant(0) : tf.shape(past)[^1];
+                Tensor pastLen = past is null ? tf.constant(0) : tf.shape(past)[^2];
                 var h = tf.gather_dyn(wte, input) + tf.gather_dyn(wpe, PositionsFor(input, pastLen));
 
                 var presents = new List<object>();
@@ -287,7 +287,7 @@
                 Tensor logits = tf.matmul(hFlat, wte, transpose_b: true);
                 logits = tf.reshape_dyn(logits, new [] { batch, sequence, (int)hParams.n_vocab });
                 result["logits"] = logits;
-            });
+            }
             return result;
         }
 
