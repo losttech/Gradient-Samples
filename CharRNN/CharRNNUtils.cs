@@ -11,7 +11,7 @@
         readonly int batchSize;
         readonly int seqLength;
         readonly Encoding encoding;
-        dynamic tensor;
+        ndarray<int> tensor;
         internal readonly Dictionary<char, int> vocabulary;
         internal readonly IEnumerable<char> chars;
         internal int vocabularySize;
@@ -40,7 +40,7 @@
             this.ResetBatchPointer();
         }
 
-        ndarray Preprocess(string inputFile, string vocabularyFile, string tensorFile,
+        ndarray<int> Preprocess(string inputFile, string vocabularyFile, string tensorFile,
             out IEnumerable<char> chars, out Dictionary<char, int> vocabulary) {
             string data = File.ReadAllText(inputFile, this.encoding);
             var counter = Counts(data);
@@ -50,27 +50,27 @@
             File.WriteAllText(vocabularyFile, JsonConvert.SerializeObject(this.chars));
             var tensor = np.array(data.Select(c => this.vocabulary[c]));
             np.save(tensorFile, tensor);
-            return tensor;
+            return (ndarray<int>)tensor;
         }
-        _ArrayLike LoadPreprocessed(string vocabularyFile, string tensorFile,
+        ndarray<int> LoadPreprocessed(string vocabularyFile, string tensorFile,
             out IEnumerable<char> chars, out Dictionary<char, int> vocabulary) {
             chars = JsonConvert.DeserializeObject<IEnumerable<char>>(File.ReadAllText(vocabularyFile));
             this.vocabularySize = this.chars.Count();
             vocabulary = this.chars.Select((chr, i) => (chr, i)).ToDictionary(i => i.chr, i => i.i);
             var tensor = np.load(tensorFile);
             this.batchCount = tensor.size / (this.batchSize * this.seqLength);
-            return tensor;
+            return (ndarray<int>)tensor;
         }
         void CreateBatches() {
             this.batchCount = (int)(tensor.size / (this.batchSize * this.seqLength));
             if (this.batchCount == 0)
                 throw new ArgumentException();
 
-            this.tensor = this.tensor[..(this.batchCount * this.batchSize * this.seqLength-1)];
+            this.tensor = this.tensor[..(this.batchCount * this.batchSize * this.seqLength)];
             _ArrayLike xdata = this.tensor;
             _ArrayLike ydata = np.copy(this.tensor);
             ydata[..^1] = xdata[1..];
-            ydata[^0] = xdata[0];
+            ydata[^1] = xdata[0];
             this.x_batches = np.split((ndarray)xdata.reshape(new int[] { this.batchSize, -1 }), this.batchCount, 1);
             this.y_batches = np.split((ndarray)ydata.reshape(new int[] { this.batchSize, -1 }), this.batchCount, 1);
         }

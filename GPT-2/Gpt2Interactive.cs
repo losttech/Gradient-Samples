@@ -47,7 +47,8 @@
             else if (length > nCtx)
                 throw new ArgumentException("Can't get samples longer than window size: " + hParams.get("n_ctx"));
 
-            new Session(graph: new Graph()).UseSelf(sess => {
+            var sess = new Session(graph: new Graph());
+            using (sess.StartUsing()) {
                 var context = tf.placeholder(tf.int32, new TensorShape(batchSize, null));
                 tf.set_random_seed(seed);
 
@@ -112,7 +113,7 @@
                     Console.Write(Delimiter);
                     Console.WriteLine(Delimiter);
                 }
-            });
+            }
         }
 
         public Gpt2Interactive() {

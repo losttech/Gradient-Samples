@@ -233,7 +233,7 @@ namespace LostTech.Gradient.Samples.SoftActorCritic {
                 if (stepResult.IsDone())
                     done[agents] = new float32(1);
                 var reward = np.zeros<float>((uint)agentCount);
-                reward[agents] = stepResult.IsDone() ? stepResult.Item2.reward : stepResult.Item1.reward;
+                reward[agents] = (ndarray<float>)(stepResult.IsDone() ? stepResult.Item2.reward : stepResult.Item1.reward);
                 episodeLength++;
                 episodeReward.__iadd__(reward);
 

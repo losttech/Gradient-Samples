@@ -38,7 +38,8 @@
             var (chars, vocabulary) = LoadCharsVocabulary(Path.Combine(args.saveDir, CharsVocabularyFileName));
             string prime = string.IsNullOrEmpty(args.prime) ? chars[0].ToString() : args.prime;
             var model = new CharRNNModel(savedArgs, training: false);
-            new Session().UseSelf(session => {
+            var session = new Session();
+            using (session.StartUsing()) {
                 tf.global_variables_initializer().run();
                 var saver = new Saver(tf.global_variables());
                 var checkpoint = tf.train.get_checkpoint_state(args.saveDir);
@@ -46,7 +47,7 @@
                     saver.restore(session, checkpoint.model_checkpoint_path);
                     Console.WriteLine(model.Sample(session, chars, vocabulary, prime: prime, num: args.count));
                 }
-            });
+            }
             return 0;
         }
 
@@ -75,7 +76,8 @@
 
             var model = new CharRNNModel(args, training: true);
 
-            new Session().UseSelf(session => {
+            var session = new Session();
+            using (session.StartUsing()) {
                 var summaries = tf.summary.merge_all();
                 var writer = new FileWriter(Path.Combine(args.logDir, DateTime.Now.ToString("s").Replace(':', '-')));
                 writer.add_graph(session.graph);
@@ -126,7 +128,7 @@
                         }
                     }
                 }
-            });
+            }
             return 0;
         }
 

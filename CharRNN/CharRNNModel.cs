@@ -54,10 +54,10 @@
             this.initialState = this.rnn.zero_state(parameters.BatchSize, tf.float32);
 
             Variable softmax_W = null, softmax_b = null;
-            new variable_scope("rnnlm").UseSelf(_ => {
+            using (new variable_scope("rnnlm").StartUsing()) {
                 softmax_W = tf.get_variable("softmax_w", new TensorShape(parameters.RNNSize, parameters.VocabularySize));
                 softmax_b = tf.get_variable("softmax_b", new TensorShape(parameters.VocabularySize));
-            });
+            }
 
             Variable embedding = tf.get_variable("embedding", new TensorShape(parameters.VocabularySize, parameters.RNNSize));
             Tensor input = tf.nn.embedding_lookup_dyn(embedding, ids: this.inputData);
@@ -92,9 +92,9 @@
                 weights: new[] { tf.ones(new[] { parameters.BatchSize * parameters.SeqLength }) });
 
             Tensor cost = null;
-            new name_scope("cost").UseSelf(_ => {
+            using (new name_scope("cost").StartUsing()) {
                 cost = tf.reduce_sum(this.loss) / parameters.BatchSize / parameters.SeqLength;
-            });
+            }
             this.cost = cost;
             this.finalState = lastState;
             this.learningRate = new Variable(0.0, trainable: false);
@@ -103,7 +103,8 @@
             IList<IGraphNodeBase> grads = tf.gradients_dyn(this.cost, tvars);
             grads = tf.clip_by_global_norm(grads, parameters.GradientClip).Item1;
             AdamOptimizer optimizer = null;
-            new name_scope("optimizer").UseSelf(_ => optimizer = AdamOptimizer.NewDyn(this.learningRate));
+            using (new name_scope("optimizer").StartUsing())
+                optimizer = AdamOptimizer.NewDyn(this.learningRate);
             this.trainOp = optimizer.apply_gradients(grads.Zip(tvars, (grad, @var) => (dynamic)(grad, @var)));
 
             tf.summary.histogram("logits", new[] { this.logits });

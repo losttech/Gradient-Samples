@@ -76,7 +76,8 @@
             var expectedTrainOut = trainOut.reshape(new int[] { trainOut.Length, 1 });
             var expectedTestOut = testOut.reshape(new int[] { testOut.Length, 1 });
 
-            new Session().UseSelf(sess =>
+            var sess = new Session();
+            using (sess.StartUsing())
             {
                 var init = tf.global_variables_initializer();
                 sess.run(init);
@@ -104,7 +105,7 @@
                     if ((step + 1) % 100 == 0)
                         Console.WriteLine($"Step{step}: test acc {testAcc}, train acc {trainAcc}");
                 }
-            });
+            }
 
             return 0;
         }

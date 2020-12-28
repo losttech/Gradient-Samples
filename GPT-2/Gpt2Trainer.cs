@@ -43,14 +43,14 @@ namespace LostTech.Gradient.Samples.GPT2 {
         public int SampleNum { get; set; } = 1;
 
         public void Train(string checkpoint, string run, int? counter, dynamic sessionConfig = null, CancellationToken cancellation = default) {
-            Session sess = sessionConfig is null
+            Session session = sessionConfig is null
                 ? Session.NewDyn(config: sessionConfig)
                 : new Session();
-            sess.UseSelf(session => {
+            using (session.StartUsing()) {
                 var context = tf.placeholder(tf.int32, new TensorShape(this.batchSize, null));
                 var output = Gpt2Model.Model(this.hParams, input: context);
                 Tensor labels = context[.., 1..];
-                Tensor logits = output["logits"][.., Range.EndAt(new Index(1, fromEnd: true))];
+                Tensor logits = output["logits"][.., ..^1];
                 var loss = tf.reduce_mean(
                     tf.nn.sparse_softmax_cross_entropy_with_logits_dyn(
                         labels: labels,
@@ -150,7 +150,7 @@ namespace LostTech.Gradient.Samples.GPT2 {
 
                 Console.WriteLine("Interrupted");
                 Save();
-            });
+            }
         }
 
         class TrainingSampler {
@@ -183,7 +183,7 @@ namespace LostTech.Gradient.Samples.GPT2 {
                     if (this.boundaries[i+1] > index + length) {
                         int withinChunk = index - this.boundaries[i];
                         dynamic chunk = this.chunks[i];
-                        return chunk[new Range(withinChunk, withinChunk + length - 1)];
+                        return chunk[withinChunk .. (withinChunk + length)];
                     }
                 }
             }
