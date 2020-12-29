@@ -1,5 +1,5 @@
-# Gradient-Samples
-Samples for [Gradient](https://losttech.software/gradient.html), TensorFlow binding for .NET
+# TensorFlow C# samples
+Samples for [LostTech.TensorFlow](https://losttech.software/gradient.html), TensorFlow binding for .NET
 
 **BasicMath**- creates two constant tensors and performs simple algebraic operations on them
 
