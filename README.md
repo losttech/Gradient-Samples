@@ -1,12 +1,6 @@
 # Gradient-Samples
 Samples for [Gradient](https://losttech.software/gradient.html), TensorFlow binding for .NET
 
-**[Billion Songs](https://github.com/losttech/BillionSongs)** a separate repository with
-deep learning-powered song lyrics generator in an ASP.NET Core web site.
-
-See also:
-[Writing billion songs with C# and Deep Learning](https://habr.com/post/453232/)
-
 **BasicMath**- creates two constant tensors and performs simple algebraic operations on them
 
 **CharRNN** - generates semi-sensical text in the style of input. For example (Shakespeare):
@@ -31,8 +25,6 @@ Get pretrained model here: https://github.com/losttech/Gradient-Samples/releases
 
 **FashionMnistClassification** - standard TensorFlow example, that classifies small pictures of clothes.
 
-**LinearSVM** - incomplete port due to a bug with tf.flags
-
 **ResNetBlock** - same as FashionMnistClassification above, but shows `Model` subclassing
 to implement ResNet block.
 
@@ -44,9 +36,16 @@ using Soft Actor-Critic algorithm, and Unity ML agents library. More details in
 
 All models **can be modified and trained**.
 
-**LICENSE** - MIT, individual samples might have different licenses (clearing that up, see individual sample folders).
+**LICENSE** - MIT for all sample code, individual samples might have different licenses (clearing that up, see individual sample folders).
 
 # See Also
 
 [**SIREN**](https://github.com/losttech/Siren) - neural representation
 for any kind of signal (image, video, audio).
+
+[**YOLOv4**](https://github.com/losttech/YOLOv4) - neural network for object detection.
+
+[**Billion Songs**](https://github.com/losttech/BillionSongs) -
+deep learning-powered song lyrics generator in an ASP.NET Core web site.
+More details in
+[Writing billion songs with C# and Deep Learning](https://habr.com/post/453232/).
