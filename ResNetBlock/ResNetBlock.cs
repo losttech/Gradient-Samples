@@ -34,7 +34,7 @@
 
             for (int part = 0; part < PartCount; part++) {
                 result = this.convs[part].__call__(result);
-                result = this.batchNorms[part].__call__(result, kwargs: batchNormExtraArgs);
+                result = this.batchNorms[part].__call__(kwargs: batchNormExtraArgs, result);
                 if (part + 1 != PartCount)
                     result = this.activation.Invoke(result)!;
             }
@@ -54,16 +54,10 @@
             return input_shape;
         }
 
-        public override Tensor call(IEnumerable<IGraphNodeBase> inputs, IGraphNodeBase? training, IGraphNodeBase? mask) {
-            return this.CallImpl((Tensor)inputs.Single(), training);
-        }
+        public Tensor __call__(Tensor input) => base.__call__(input);
 
-        public override Tensor call(IGraphNodeBase inputs, bool training, IGraphNodeBase? mask = null) {
-            return this.CallImpl((Tensor)inputs, training);
-        }
-
-        public override Tensor call(IGraphNodeBase inputs, IGraphNodeBase? training = null, IEnumerable<IGraphNodeBase>? mask = null) {
-            return this.CallImpl((Tensor)inputs, training);
+        public override Tensor call(IGraphNodeBase input, object? training = null, object? mask = null) {
+            return this.CallImpl((Tensor)input, training);
         }
     }
 }

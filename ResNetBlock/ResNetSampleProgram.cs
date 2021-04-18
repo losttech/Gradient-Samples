@@ -5,7 +5,7 @@
     using tensorflow;
     using tensorflow.keras;
     using tensorflow.keras.layers;
-    using tensorflow.train;
+    using tensorflow.optimizers;
 
     static class ResNetSampleProgram {
         public static void Run(int epochs = 5) {
@@ -23,11 +23,11 @@
                 new ResNetBlock(kernelSize: 3, filters: new [] { 1, 2, 3 }),
                 new ResNetBlock(kernelSize: 3, filters: new [] { 1, 2, 3 }),
                 new Flatten(),
-                new Dense(units: 10, activation: tf.nn.softmax_fn),
+                new Dense(units: 10, activation: tf.keras.activations.softmax_fn),
             });
 
             model.compile(
-                optimizer: new AdamOptimizer(),
+                optimizer: new Adam(),
                 loss: "sparse_categorical_crossentropy",
                 metrics: new [] { "accuracy" });
 
