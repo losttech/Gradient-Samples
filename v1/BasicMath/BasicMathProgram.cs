@@ -2,14 +2,17 @@
     using System;
     using LostTech.Gradient;
     using tensorflow;
+    using tensorflow.compat.v1;
+    using tensorflow.compat.v1.summary;
     using tensorflow.core.protobuf.config_pb2;
     using tensorflow.python.ops.gen_bitwise_ops;
-    using tensorflow.summary;
 
     static class BasicMathProgram {
         static void Main() {
             GradientLog.OutputWriter = Console.Out;
             GradientEngine.UseEnvironmentFromVariable();
+
+            v1.disable_eager_execution();
 
             Tensor a = tf.constant(5.0, name: "a");
             Tensor b = tf.constant(10.0, name: "b");

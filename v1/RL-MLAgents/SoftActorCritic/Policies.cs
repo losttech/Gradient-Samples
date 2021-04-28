@@ -3,6 +3,8 @@ namespace LostTech.Gradient.Samples.SoftActorCritic {
     using System;
     using LostTech.Gradient;
     using tensorflow;
+    using tensorflow.compat.v1;
+    using tensorflow.compat.v1.layers;
     using static Tools;
 
     static class Policies {
@@ -29,18 +31,18 @@ namespace LostTech.Gradient.Samples.SoftActorCritic {
             if (innerActivation is null) throw new ArgumentNullException(nameof(innerActivation));
 
             var network = MultiLayerPreceptron(input, hiddenSizes, innerActivation, innerActivation);
-            Tensor mu = tf.layers.dense(network, units: actionDimensions, activation: outputActivation, name: "mu");
+            Tensor mu = layers.dense_dyn(network, units: actionDimensions, activation: outputActivation, name: "mu");
 
             Tensor logStd;
             using (new variable_scope("logStd").StartUsing()) {
-                logStd = tf.layers.dense(network, units: actionDimensions, activation: tf.tanh_fn);
+                logStd = layers.dense_dyn(network, units: actionDimensions, activation: tf.tanh_fn);
                 logStd = tf.clip_by_value(logStd, clip_value_min: LogStdMin, clip_value_max: LogStdMax);
             }
 
             Tensor std = tf.exp(logStd, name: "std");
             Tensor pi;
             using(new variable_scope("pi").StartUsing())
-                pi = tf.add(mu, tf.random_normal(tf.shape(mu)) * std, name: "pi");
+                pi = tf.add(mu, tf.random.normal(tf.shape_dyn(mu)) * std, name: "pi");
             var logpPi = GaussianLikelihood(input: pi, mu: mu, logStd: logStd, name: "logpPi");
             return new Policy(mu: mu, pi: pi, logProbPi: logpPi);
         }

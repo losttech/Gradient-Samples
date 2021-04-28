@@ -6,14 +6,17 @@ namespace LostTech.Gradient.Samples.SoftActorCritic {
     using LostTech.Gradient;
     using LostTech.Gradient.BuiltIns;
     using tensorflow;
+    using tensorflow.compat.v1;
+    using tensorflow.compat.v1.layers;
+    using Variable = tensorflow.Variable;
 
     static class Tools {
         const float Epsilon = 1e-08f;
         static DType defaultType = tf.float32;
         public static Tensor Placeholder(int size)
-            => tf.placeholder(defaultType, new TensorShape(null, size));
+            => v1.placeholder(defaultType, new TensorShape(null, size));
         public static Tensor Placeholder()
-            => tf.placeholder(defaultType, new TensorShape(new int?[] { null }));
+            => v1.placeholder(defaultType, new TensorShape(new int?[] { null }));
         /// <summary>
         /// Creates a dense neural network
         /// </summary>
@@ -25,7 +28,7 @@ namespace LostTech.Gradient.Samples.SoftActorCritic {
             if (innerActivation is null) throw new ArgumentNullException(nameof(innerActivation));
 
             for (int layer = 0; layer < hiddenSizes.Length; layer++) {
-                input = tf.layers.dense(input,
+                input = layers.dense_dyn(input,
                     units: hiddenSizes[layer],
                     activation: layer == hiddenSizes.Length - 1 ? outputActivation : innerActivation
                 );
@@ -33,7 +36,7 @@ namespace LostTech.Gradient.Samples.SoftActorCritic {
             return input;
         }
         public static IEnumerable<Variable> GetVariables(string scopeNamePrefix)
-            => ((PythonList<Variable>)tf.global_variables()).Where(v => v.name.Contains(scopeNamePrefix));
+            => ((PythonList<Variable>)v1.global_variables()).Where(v => v.name.Contains(scopeNamePrefix));
         public static int CountVars(string scopeNamePrefix) {
             var variables = GetVariables(scopeNamePrefix);
             return variables.Sum(v => v.shape.as_list().Cast<int>().Aggregate((a, b) => a * b));

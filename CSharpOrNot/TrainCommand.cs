@@ -9,7 +9,8 @@
     using numpy;
     using tensorflow;
     using tensorflow.keras.callbacks;
-    using tensorflow.keras.optimizers;
+    using tensorflow.optimizers;
+    using tensorflow.python.keras.backend;
     using static CSharpOrNot;
 
     [UsedImplicitly]
@@ -36,7 +37,7 @@
         int Train(List<string[]>[] filesByExtension) {
             var random = this.Seed is null ? new Random() : new Random(this.Seed.Value);
             if (this.Seed != null)
-                tf.set_random_seed(this.Seed.Value);
+                tf.random.set_seed(this.Seed.Value);
 
             var test = Split(random, filesByExtension, this.TestSplit, out filesByExtension);
 
@@ -67,12 +68,12 @@
             model.compile(
                 optimizer: new Adam(),
                 loss: tf.keras.losses.sparse_categorical_crossentropy_fn,
-                metrics: new dynamic[] { "accuracy" });
+                metrics: new [] { "accuracy" });
             model.build(input_shape: new TensorShape(null, Height, Width, 1));
             model.summary();
 
             tf.io.write_graph(
-                tf.keras.backend.get_session().graph_def,
+                backend.get_session().graph_def,
                 Path.GetFullPath("logs"),
                 name: "model.pbtxt",
                 as_text: true);

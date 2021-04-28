@@ -4,6 +4,7 @@ namespace LostTech.Gradient.Samples.SoftActorCritic {
     using System.Linq;
     using LostTech.Gradient;
     using tensorflow;
+    using tensorflow.compat.v1;
     using PyFunc = Gradient.PythonFunctionContainer;
     using static Tools;
 

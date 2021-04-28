@@ -7,10 +7,13 @@ namespace LostTech.Gradient.Samples.SoftActorCritic {
     using LostTech.Gradient;
     using numpy;
     using tensorflow;
+    using tensorflow.compat.v1;
+    using tensorflow.compat.v1.train;
     using tensorflow.train;
     using static Tools;
     using static System.Linq.Enumerable;
     using CM = Gradient.ContextManagerExtensions;
+    using Variable = tensorflow.Variable;
 
     static class SoftActorCritic {
         /// <summary>
@@ -76,7 +79,7 @@ namespace LostTech.Gradient.Samples.SoftActorCritic {
                                 int maxEpisodeLength = 1024,
                                 int saveFrequency = 1) {
             hiddenSizes ??= new int[] { 256, 256 };
-            tf.set_random_seed(seed);
+            tf.random.set_seed(seed);
             numpy.random.seed((uint)seed);
 
             env.Reset();
@@ -164,16 +167,16 @@ namespace LostTech.Gradient.Samples.SoftActorCritic {
                 targetUpdate = tf.group(
                     GetVariables("main").Zip(GetVariables("target"))
                     .Select(((Variable main, Variable target)v)
-                        => tf.assign(v.target, v.target * (dynamic)polyak + v.main * (dynamic)(1-polyak), name: "targetUpdate"))
+                        => v1.assign(v.target, v.target * (dynamic)polyak + v.main * (dynamic)(1-polyak), name: "targetUpdate"))
                     .ToArray());
 
             var targetInit = tf.group(
                 GetVariables("main").Zip(GetVariables("target"))
-                .Select(((Variable main, Variable target) v) => tf.assign(v.target, v.main))
+                .Select(((Variable main, Variable target) v) => v1.assign(v.target, v.main))
                 .ToArray());
 
             var session = new Session();
-            session.run(tf.global_variables_initializer());
+            session.run(v1.global_variables_initializer());
             session.run(targetInit);
 
 #warning no model saving
