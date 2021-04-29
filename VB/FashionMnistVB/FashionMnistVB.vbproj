@@ -3,10 +3,11 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <RootNamespace>LostTech.Gradient.Samples</RootNamespace>
-    <TargetFramework>netcoreapp2.1</TargetFramework>
+    <TargetFramework>netcoreapp3.1</TargetFramework>
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Gradient.Runtime" Version="0.4.5-D20210428-001-CI" />
     <PackageReference Include="LostTech.TensorFlow" Version="2.4.1-CI-20210425-002" />
   </ItemGroup>
 

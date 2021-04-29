@@ -1,10 +1,8 @@
 Imports System
-Imports LostTech.Gradient
-Imports LostTech.Gradient.BuiltIns
 Imports tensorflow
 Imports tensorflow.keras
 Imports tensorflow.keras.layers
-Imports tensorflow.keras.optimizers
+Imports tensorflow.optimizers
 
 Module Program
     Sub Main()
@@ -23,13 +21,13 @@ Module Program
         Dim model = New Sequential(New Layer() {
             New Flatten(kwargs:=New With {.input_shape = (28, 28)}.AsKwArgs),
             New Dense(units:=128, activation:=tf.nn.leaky_relu_fn),
-            New Dense(units:=10, activation:=tf.nn.softmax_fn)
+            New Dense(units:=10, activation:=tf.keras.activations.softmax_fn)
         })
 
         model.compile(
             optimizer:=New ImplicitContainer(Of Object)(New Adam()),
             loss:="sparse_categorical_crossentropy",
-            metrics:=New Object() {"accuracy"})
+            metrics:=New String() {"accuracy"})
 
         model.fit(trainImages, trainLabels, epochs:=5)
 
