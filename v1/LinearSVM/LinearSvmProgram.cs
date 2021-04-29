@@ -12,7 +12,10 @@
     using numpy;
     using Python.Runtime;
     using tensorflow;
+    using tensorflow.compat.v1;
+    using tensorflow.compat.v1.train;
     using tensorflow.train;
+    using Variable = tensorflow.Variable;
 
     class LinearSvmProgram {
         static readonly Random random = new Random();
@@ -31,6 +34,7 @@
 
             // required before using PythonEngine
             TensorFlowSetup.Instance.EnsureInitialized();
+
             return ConsoleCommandDispatcher.DispatchCommand(
                ConsoleCommandDispatcher.FindCommandsInSameAssemblyAs(typeof(LinearSvmProgram)),
                args, Console.Out);
@@ -38,6 +42,8 @@
 
         public int Run()
         {
+            v1.disable_eager_execution();
+
             Variable w, b;
             Tensor inPlace, outPlace;
             ndarray trainIn, trainOut, testIn, testOut;
@@ -60,12 +66,12 @@
                 testIn = np.array(((IEnumerable)input).Cast<dynamic>().Skip(trainCount));
                 testOut = np.array(expectedOutput.Skip(trainCount));
 
-                inPlace = tf.placeholder(shape: new TensorShape(null, input.shape[1]),
+                inPlace = v1.placeholder(shape: new TensorShape(null, (int)input.shape[1]),
                     dtype: tf.float32);
-                outPlace = tf.placeholder(shape: new TensorShape(null, 1), dtype: tf.float32);
+                outPlace = v1.placeholder(shape: new TensorShape(null, 1), dtype: tf.float32);
                 w = new Variable(
-                    tf.random_normal(shape: new TensorShape((int)input.shape[1], 1)));
-                b = new Variable(tf.random_normal(shape: new TensorShape(1, 1)));
+                    tf.random.normal(shape: new TensorShape((int)input.shape[1], 1)));
+                b = new Variable(tf.random.normal(shape: new TensorShape(1, 1)));
             }
 
             var totalLoss = Loss(w, b, inPlace, outPlace);
@@ -79,7 +85,7 @@
             var sess = new Session();
             using (sess.StartUsing())
             {
-                var init = tf.global_variables_initializer();
+                var init = v1.global_variables_initializer();
                 sess.run(init);
                 for(int step = 0; step < this.flags.StepCount; step++)
                 {
@@ -110,11 +116,11 @@
             return 0;
         }
 
-        dynamic Loss(dynamic W, dynamic b, dynamic inputData, dynamic targetData) {
-            var logits = tf.subtract(tf.matmul(inputData, W), b);
-            var normTerm = tf.divide(tf.reduce_sum(tf.multiply(tf.transpose(W), W)), 2);
-            var classificationLoss = tf.reduce_mean(tf.maximum(tf.constant(0.0), tf.subtract(this.flags.Delta, tf.multiply(logits, targetData))));
-            var totalLoss = tf.add_dyn(tf.multiply(this.flags.C, classificationLoss), tf.multiply(this.flags.Reg, normTerm));
+        Tensor Loss(IGraphNodeBase W, IGraphNodeBase b, Tensor inputData, Tensor targetData) {
+            Tensor logits = tf.matmul(inputData, W)  - b;
+            Tensor normTerm = tf.reduce_sum(tf.transpose(W) * W) / 2;
+            Tensor classificationLoss = tf.reduce_mean(tf.maximum(tf.constant(0.0), this.flags.Delta - logits * targetData));
+            Tensor totalLoss = this.flags.C * classificationLoss + this.flags.Reg * normTerm;
             return totalLoss;
         }
 
