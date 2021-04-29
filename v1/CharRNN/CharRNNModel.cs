@@ -7,10 +7,13 @@
     using LostTech.Gradient.ManualWrappers;
     using numpy;
     using tensorflow;
-    using tensorflow.contrib.optimizer_v2.adam;
-    using tensorflow.contrib.rnn;
-    using tensorflow.nn.rnn_cell;
-    using seq2seqState = System.ValueTuple<tensorflow.nn.rnn_cell.LSTMStateTuple, tensorflow.nn.rnn_cell.LSTMStateTuple>;
+    using tensorflow.compat.v1;
+    using tensorflow.compat.v1.nn.rnn_cell;
+    using tensorflow.compat.v1.summary;
+    using tensorflow.compat.v1.train;
+    using name_scope = tensorflow.name_scope;
+    using seq2seqState = System.ValueTuple<tensorflow.compat.v1.nn.rnn_cell.LSTMStateTuple, tensorflow.compat.v1.nn.rnn_cell.LSTMStateTuple>;
+    using Variable = tensorflow.Variable;
 
     class CharRNNModel {
         readonly Random random = new Random();
@@ -48,25 +51,25 @@
                     }, cell);
                 this.cells.Add(cell);
             }
-            this.rnn = new MultiRNNCell(this.cells, state_is_tuple: true);
-            this.inputData = tf.placeholder(tf.int32, new TensorShape(parameters.BatchSize, parameters.SeqLength));
-            this.targets = tf.placeholder(tf.int32, new TensorShape(parameters.BatchSize, parameters.SeqLength));
+            this.rnn = MultiRNNCell.NewDyn(this.cells, state_is_tuple: true);
+            this.inputData = v1.placeholder(tf.int32, new TensorShape(parameters.BatchSize, parameters.SeqLength));
+            this.targets = v1.placeholder(tf.int32, new TensorShape(parameters.BatchSize, parameters.SeqLength));
             this.initialState = this.rnn.zero_state(parameters.BatchSize, tf.float32);
 
             Variable softmax_W = null, softmax_b = null;
             using (new variable_scope("rnnlm").StartUsing()) {
-                softmax_W = tf.get_variable("softmax_w", new TensorShape(parameters.RNNSize, parameters.VocabularySize));
-                softmax_b = tf.get_variable("softmax_b", new TensorShape(parameters.VocabularySize));
+                softmax_W = v1.get_variable("softmax_w", new TensorShape(parameters.RNNSize, parameters.VocabularySize));
+                softmax_b = v1.get_variable("softmax_b", new TensorShape(parameters.VocabularySize));
             }
 
-            Variable embedding = tf.get_variable("embedding", new TensorShape(parameters.VocabularySize, parameters.RNNSize));
+            Variable embedding = v1.get_variable("embedding", new TensorShape(parameters.VocabularySize, parameters.RNNSize));
             Tensor input = tf.nn.embedding_lookup_dyn(embedding, ids: this.inputData);
 
             // dropout beta testing: double check which one should affect next line
             if (training && parameters.KeepOutputProbability < 1)
                 input = tf.nn.dropout(input, parameters.KeepOutputProbability);
 
-            IList<Tensor> inputs = tf.split(input, parameters.SeqLength, axis: 1);
+            IList<Tensor> inputs = tf.split_dyn(input, parameters.SeqLength, axis: 1);
             inputs = inputs.Select(i => (Tensor)tf.squeeze(i, axis: 1)).ToList();
 
             dynamic Loop(dynamic prev, dynamic _) {
@@ -85,7 +88,8 @@
             var output = tf.reshape(concatenatedOutputs, new[] { -1, parameters.RNNSize });
 
             this.logits = tf.matmul(output, softmax_W) + softmax_b;
-            this.probs = tf.nn.softmax(new[] { this.logits });
+            this.probs = tf.nn.softmax(this.logits);
+            // https://stackoverflow.com/questions/64522160/tensorflow-v2-alternative-of-sequence-loss-by-example
             this.loss = tensorflow.contrib.legacy_seq2seq.legacy_seq2seq.sequence_loss_by_example_dyn(
                 logits: new[] { this.logits },
                 targets: new[] { tf.reshape(this.targets, new[] { -1 }) },
@@ -99,7 +103,7 @@
             this.finalState = lastState;
             this.learningRate = new Variable(0.0, trainable: false);
 
-            IEnumerable<Variable> tvars = tf.trainable_variables();
+            IEnumerable<Variable> tvars = v1.trainable_variables();
             IList<IGraphNodeBase> grads = tf.gradients_dyn(this.cost, tvars);
             grads = tf.clip_by_global_norm(grads, parameters.GradientClip).Item1;
             AdamOptimizer optimizer = null;
@@ -107,9 +111,9 @@
                 optimizer = AdamOptimizer.NewDyn(this.learningRate);
             this.trainOp = optimizer.apply_gradients(grads.Zip(tvars, (grad, @var) => (dynamic)(grad, @var)));
 
-            tf.summary.histogram("logits", new[] { this.logits });
-            tf.summary.histogram("loss", new[] { this.loss });
-            tf.summary.histogram("train_loss", new[] { this.cost });
+            summary.histogram("logits", new[] { this.logits });
+            summary.histogram("loss", new[] { this.loss });
+            summary.histogram("train_loss", new[] { this.cost });
         }
 
         public string Sample(Session session, IList<char> chars, IReadOnlyDictionary<char, int> vocabulary, int num = 200, string prime = "The ", int samplingType = 1) {
@@ -179,7 +183,6 @@
             [ModelType.RNN] = i => RNNCell.NewDyn(i),
             [ModelType.GRU] = i => new GRUCell(i),
             [ModelType.LSTM] = i => new LSTMCell(i),
-            [ModelType.NAS] = i => new NASCell(i),
         };
     }
 
