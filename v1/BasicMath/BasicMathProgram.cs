@@ -14,6 +14,14 @@
 
             v1.disable_eager_execution();
 
+            dynamic config = config_pb2.ConfigProto.CreateInstance();
+            // unless this is set, tensorflow-gpu consumes all of GPU memory
+            // don't set it if you don't want you training to crash due to random OOM in the middle
+            config.gpu_options.allow_growth = true;
+
+            Session session = Session.NewDyn(config: config);
+            using var _ = session.StartUsing();
+
             Tensor a = tf.constant(5.0, name: "a");
             Tensor b = tf.constant(10.0, name: "b");
 
@@ -25,14 +33,6 @@
 
             Tensor xor = tf.bitwise.bitwise_xor(x, y);
             Tensor bitcount = gen_bitwise_ops.population_count(xor);
-
-            dynamic config = config_pb2.ConfigProto.CreateInstance();
-            // unless this is set, tensorflow-gpu consumes all of GPU memory
-            // don't set it if you don't want you training to crash due to random OOM in the middle
-            config.gpu_options.allow_growth = true;
-
-            Session session = Session.NewDyn(config: config);
-            using var _ = session.StartUsing();
 
             var writer = new FileWriter(".", session.graph);
             using var __ = writer.StartUsing();

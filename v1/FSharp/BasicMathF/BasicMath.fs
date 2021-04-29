@@ -4,9 +4,10 @@ open System
 open LostTech.Gradient
 open LostTech.TensorFlow
 open tensorflow
-open tensorflow.summary
 open tensorflow.core.protobuf.config_pb2
 open tensorflow.python.ops.gen_bitwise_ops
+open tensorflow.compat.v1
+open tensorflow.compat.v1.summary
 
 [<EntryPoint>]
 let main argv =
@@ -14,6 +15,12 @@ let main argv =
     GradientEngine.UseEnvironmentFromVariable() |> ignore
 
     GradientLog.OutputWriter <- Console.Out
+
+    let config = !? config_pb2.ConfigProto ()
+    config?gpu_options?allow_growth <- true
+
+    let sess = Session.NewDyn(config=config)
+    use __ = sess.StartUsing()
 
     // Loosing static typing here, because
     // F# does not do perform covariant coversions automatically :(
@@ -30,11 +37,6 @@ let main argv =
     let xor = tf.bitwise.bitwise_xor(x, y)
     let bitcount = gen_bitwise_ops.population_count(xor)
 
-    let config = !? config_pb2.ConfigProto ()
-    config?gpu_options?allow_growth <- true
-
-    let sess = Session.NewDyn(config=config)
-    use __ = sess.StartUsing()
     let writer = FileWriter(".",  sess.graph :?> Graph)
     printfn "a = %O" (sess.run a)
     printfn "b = %O" (sess.run b)
