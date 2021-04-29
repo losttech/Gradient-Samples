@@ -11,24 +11,24 @@ namespace LostTech.Gradient.Samples.GPT2 {
     using numpy;
 
     using tensorflow;
-    using tensorflow.contrib.training;
-    using tensorflow.train;
-
+    using tensorflow.compat.v1;
+    using tensorflow.compat.v1.train;
     using static System.FormattableString;
 
     using DataSet = System.Collections.Generic.List<numpy.ndarray>;
+    using Variable = tensorflow.Variable;
 
     public class Gpt2Trainer {
         const string SampleDir = "samples";
 
         readonly DataSet dataset;
         readonly Gpt2Encoder encoder;
-        readonly HParams hParams;
+        readonly IReadOnlyDictionary<string, int> hParams;
         readonly int batchSize;
         readonly int sampleLength;
         readonly Random random;
 
-        public Gpt2Trainer(DataSet dataset, Gpt2Encoder encoder, HParams hParams,
+        public Gpt2Trainer(DataSet dataset, Gpt2Encoder encoder, IReadOnlyDictionary<string, int> hParams,
             int batchSize, int sampleLength, Random random) {
             this.dataset = dataset ?? throw new ArgumentNullException(nameof(dataset));
             this.encoder = encoder ?? throw new ArgumentNullException(nameof(encoder));
@@ -47,7 +47,7 @@ namespace LostTech.Gradient.Samples.GPT2 {
                 ? Session.NewDyn(config: sessionConfig)
                 : new Session();
             using (session.StartUsing()) {
-                var context = tf.placeholder(tf.int32, new TensorShape(this.batchSize, null));
+                var context = v1.placeholder(tf.int32, new TensorShape(this.batchSize, null));
                 var output = Gpt2Model.Model(this.hParams, input: context);
                 Tensor labels = context[.., 1..];
                 Tensor logits = output["logits"][.., ..^1];
@@ -64,7 +64,7 @@ namespace LostTech.Gradient.Samples.GPT2 {
                     temperature: 1.0f,
                     topK: 40);
 
-                var trainVars = ((PythonList<Variable>)tf.trainable_variables()).Where(var => var.name.Contains("model")).ToPyList();
+                var trainVars = ((PythonList<Variable>)v1.trainable_variables()).Where(var => var.name.Contains("model")).ToPyList();
                 var optimizer = new AdamOptimizer(learning_rate: 0.0002).minimize(loss, var_list: trainVars);
 
                 var saver = new Saver(
@@ -72,7 +72,7 @@ namespace LostTech.Gradient.Samples.GPT2 {
                     max_to_keep: 5,
                     keep_checkpoint_every_n_hours: 1);
 
-                session.run(tf.global_variables_initializer());
+                session.run(v1.global_variables_initializer());
 
                 Console.WriteLine("Loading checkpoint " + checkpoint);
                 saver.restore(session, checkpoint);

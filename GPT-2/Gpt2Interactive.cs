@@ -8,8 +8,9 @@
     using ManyConsole.CommandLineUtils;
     using numpy;
     using tensorflow;
+    using tensorflow.compat.v1;
+    using tensorflow.compat.v1.train;
     using tensorflow.errors;
-    using tensorflow.train;
 
     class Gpt2Interactive: ConsoleCommand
     {
@@ -41,16 +42,17 @@
             var encoder = Gpt2Encoder.LoadEncoder(modelName);
             var hParams = Gpt2Model.LoadHParams(modelName);
 
-            int nCtx = ((dynamic)hParams).n_ctx;
+            int nCtx = hParams["n_ctx"];
             if (length is null)
                 length = nCtx;
             else if (length > nCtx)
-                throw new ArgumentException("Can't get samples longer than window size: " + hParams.get("n_ctx"));
+                throw new ArgumentException("Can't get samples longer than window size: " + hParams["n_ctx"]);
 
             var sess = new Session(graph: new Graph());
             using (sess.StartUsing()) {
-                var context = tf.placeholder(tf.int32, new TensorShape(batchSize, null));
-                tf.set_random_seed(seed);
+                var context = v1.placeholder(tf.int32, new TensorShape(batchSize, null));
+                if (seed != null)
+                    tf.random.set_seed(seed.Value);
 
                 var output = Gpt2Sampler.SampleSequence(
                     hParams: hParams,
