@@ -8,7 +8,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="LostTech.TensorFlow" Version="2.4.1-CI-20210425-002" />
+    <PackageReference Include="LostTech.TensorFlow" Version="2.4.1-preview1" />
   </ItemGroup>
 
 </Project>

@@ -10,7 +10,7 @@
 
   <ItemGroup>
     <PackageReference Include="LostTech.MLAgents.Environments" Version="0.19.0" />
-    <PackageReference Include="LostTech.TensorFlow" Version="2.4.1-CI-20210425-002" />
+    <PackageReference Include="LostTech.TensorFlow" Version="2.4.1-preview1" />
   </ItemGroup>
 
 </Project>

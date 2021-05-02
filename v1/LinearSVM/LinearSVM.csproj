@@ -7,7 +7,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="LostTech.TensorFlow" Version="2.4.1-CI-20210425-002" />
+    <PackageReference Include="LostTech.TensorFlow" Version="2.4.1-preview1" />
     <PackageReference Include="ManyConsole.CommandLineUtils" Version="1.0.3-alpha" />
   </ItemGroup>
 

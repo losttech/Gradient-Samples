@@ -7,8 +7,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Gradient.Runtime" Version="0.4.5-D20210428-001-CI" />
-    <PackageReference Include="LostTech.TensorFlow" Version="2.4.1-CI-20210425-002" />
+    <PackageReference Include="LostTech.TensorFlow" Version="2.4.1-preview1" />
   </ItemGroup>
 
 </Project>
