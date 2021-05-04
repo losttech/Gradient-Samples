@@ -5,7 +5,7 @@
     using tensorflow;
     using tensorflow.keras;
     using tensorflow.keras.layers;
-    using tensorflow.train;
+    using tensorflow.optimizers;
 
     static class FashionMnistClassification {
         static void Main() {
@@ -25,12 +25,12 @@
 
             var model = new Sequential(new Layer[] {
                 new Flatten(kwargs: new { input_shape = (28, 28) }.AsKwArgs()),
-                new Dense(units: 128, activation: tf.nn.selu_fn),
-                new Dense(units: 10, activation: tf.nn.softmax_fn),
+                new Dense(units: 128, activation: tf.keras.activations.selu_fn),
+                new Dense(units: 10, activation: tf.keras.activations.softmax_fn),
             });
 
             model.compile(
-                optimizer: new AdamOptimizer(),
+                optimizer: new Adam(),
                 loss: "sparse_categorical_crossentropy",
                 metrics: new [] {"accuracy"});
 

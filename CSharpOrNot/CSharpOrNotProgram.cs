@@ -14,9 +14,9 @@
             TensorFlowSetup.Instance.OptInToUsageDataCollection();
             GradientEngine.UseEnvironmentFromVariable();
 
-            dynamic config = config_pb2.ConfigProto.CreateInstance();
-            config.gpu_options.allow_growth = true;
-            tf.keras.backend.set_session(Session.NewDyn(config: config));
+            var gpus = tf.config.list_physical_devices("GPU");
+            foreach(var gpu in gpus)
+                tf.config.experimental.set_memory_growth(gpu, enable: true);
 
             return ConsoleCommandDispatcher.DispatchCommand(
                 ConsoleCommandDispatcher.FindCommandsInSameAssemblyAs(typeof(CSharpOrNotProgram)),

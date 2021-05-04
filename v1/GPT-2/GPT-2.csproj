@@ -1,0 +1,31 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>netcoreapp3.1</TargetFramework>
+    <RootNamespace>LostTech.Gradient.Samples.GPT2</RootNamespace>
+    <TargetLatestRuntimePatch>true</TargetLatestRuntimePatch>
+    <LangVersion>8.0</LangVersion>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Remove="checkpoint\**" />
+    <Compile Remove="models\**" />
+    <Compile Remove="samples\**" />
+    <EmbeddedResource Remove="checkpoint\**" />
+    <EmbeddedResource Remove="models\**" />
+    <EmbeddedResource Remove="samples\**" />
+    <None Remove="checkpoint\**" />
+    <None Remove="models\**" />
+    <None Remove="samples\**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="CsvHelper" Version="12.1.2" />
+    <PackageReference Include="LostTech.TensorFlow" Version="2.4.1-preview1" />
+    <PackageReference Include="ManyConsole.CommandLineUtils" Version="1.0.3-alpha" />
+    <PackageReference Include="morelinq" Version="3.3.2" />
+    <PackageReference Include="Newtonsoft.Json" Version="12.0.3" />
+  </ItemGroup>
+
+</Project>

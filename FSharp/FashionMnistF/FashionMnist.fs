@@ -10,7 +10,7 @@ open numpy
 open tensorflow
 open tensorflow.keras
 open tensorflow.keras.layers
-open tensorflow.keras.optimizers
+open tensorflow.optimizers
 
 // this is no longer needed in most scenarios with 1.15, but we left it for example
 let inline (!>) (x:^a) : ^b = ((^a or ^b) : (static member op_Implicit : ^a -> ^b) x)
@@ -33,19 +33,19 @@ let main argv =
 
     let model = Sequential([|
         Flatten(kwargs = {| input_shape = struct (28, 28) |}.AsKwArgs());
-        Dense(units = 128, activation = tf.nn.relu_fn);
-        Dense(units = 10, activation = tf.nn.softmax_fn);
+        Dense(units = 128, activation = tf.keras.activations.relu_fn);
+        Dense(units = 10, activation = tf.keras.activations.softmax_fn);
     |]: obj array)
 
     model.compile(
         optimizer = implicit<obj>(Adam()),
         loss = tf.keras.losses.sparse_categorical_crossentropy_fn,
-        metrics = (PyList.ofSeq<obj> ["accuracy"] :> _ seq))
+        metrics = PyList.ofSeq ["accuracy"])
 
     model.fit(trainImages, trainLabels, epochs = 5) |> ignore
 
     let evalResult = model.evaluate(testImages, testLabels)
-    let accuracy = Core.Operators.float32 (Dyn.getIndexer[1] evalResult  : numpy.float32)
+    let accuracy = Core.Operators.float32 (Dyn.getIndexer[1] evalResult : float)
     printfn "Test accuracy: %f" accuracy
 
     model.summary()

@@ -4,7 +4,9 @@
     using System.Linq;
     using numpy;
     using tensorflow;
-    using tensorflow.train;
+    using tensorflow.keras;
+    using tensorflow.keras.layers;
+    using tensorflow.optimizers;
 
     static class SimpleApproximationProgram {
         const int x0 = 10, x1 = 20;
@@ -17,58 +19,22 @@
             GradientLog.OutputWriter = Console.Out;
             GradientEngine.UseEnvironmentFromVariable();
 
-            var input = tf.placeholder(tf.float32, new TensorShape(null, 1), name: "x");
-            var output = tf.placeholder(tf.float32, new TensorShape(null, 1), name: "y");
+            var input = tf.keras.Input_dyn(1);
 
-            var hiddenLayer = tf.layers.dense(input, hiddenSize,
-                activation: tf.sigmoid_fn,
-                kernel_initializer: new ones_initializer(),
-                bias_initializer: new random_uniform_initializer(minval: -x1, maxval: -x0),
-                name: "hidden");
+            var hiddenLayer = new Dense(hiddenSize, activation: tf.keras.activations.sigmoid_fn).__call__(input);
+            var output = new Dense(1, activation: tf.keras.activations.sigmoid_fn).__call__(hiddenLayer);
 
-            var model = tf.layers.dense(hiddenLayer, units: 1, name: "output");
+            var model = new Model(new {inputs = input, outputs = output}.AsKwArgs());
+            model.compile(optimizer: new SGD(learning_rate: learningRate),
+                          loss: tf.keras.losses.MSE_fn);
 
-            var cost = tf.losses.mean_squared_error(output, model);
-
-            var training = new GradientDescentOptimizer(learning_rate: learningRate).minimize(cost);
-
-            dynamic init = tf.global_variables_initializer();
-            var session = new Session();
-            using var _ = session.StartUsing();
-            session.run(init);
+            var (validationInputs, validationOutputs) = GenerateTestValues();
 
             foreach (int iteration in Enumerable.Range(0, iterations)) {
                 var (trainInputs, trainOutputs) = GenerateTestValues();
-                var iterationDataset = new Dictionary<dynamic, object> {
-                    [input] = trainInputs,
-                    [output] = trainOutputs,
-                };
-                session.run(training, feed_dict: iterationDataset);
-
-                if (iteration % 100 == 99)
-                    Console.WriteLine($"cost = {session.run(cost, feed_dict: iterationDataset)}");
-            }
-
-            var (testInputs, testOutputs) = GenerateTestValues();
-
-            var testValues = session.run(model, feed_dict: new Dictionary<object, object> {
-                [input] = testInputs,
-            });
-
-            using (new variable_scope("hidden", reuse: true).StartUsing()) {
-                Variable w = tf.get_variable("kernel");
-                Variable b = tf.get_variable("bias");
-                Console.WriteLine("hidden:");
-                Console.WriteLine($"kernel= {w.eval()}");
-                Console.WriteLine($"bias  = {b.eval()}");
-            }
-
-            using (new variable_scope("output", reuse: true).StartUsing()) {
-                Variable w = tf.get_variable("kernel");
-                Variable b = tf.get_variable("bias");
-                Console.WriteLine("hidden:");
-                Console.WriteLine($"kernel= {w.eval()}");
-                Console.WriteLine($"bias  = {b.eval()}");
+                model.fit(trainInputs, trainOutputs, batchSize: testSize/50,
+                          epochs: iteration+1, stepsPerEpoch: 1, initialEpoch: iteration,
+                          validationInput: validationInputs, validationTarget: validationOutputs);
             }
         }
 

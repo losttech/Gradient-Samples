@@ -1,0 +1,160 @@
+﻿namespace LinearSVM {
+    using System;
+    using System.Collections;
+    using System.Collections.Generic;
+    using System.Diagnostics;
+    using System.Dynamic;
+    using System.Linq;
+    using LostTech.Gradient;
+    using LostTech.Gradient.ManualWrappers;
+    using LostTech.TensorFlow;
+    using ManyConsole.CommandLineUtils;
+    using numpy;
+    using Python.Runtime;
+    using tensorflow;
+    using tensorflow.compat.v1;
+    using tensorflow.compat.v1.train;
+    using tensorflow.train;
+    using Variable = tensorflow.Variable;
+
+    class LinearSvmProgram {
+        static readonly Random random = new Random();
+
+        readonly LinearSvmCommand flags;
+
+        public LinearSvmProgram(LinearSvmCommand flags)
+        {
+            this.flags = flags ?? throw new ArgumentNullException(nameof(flags));
+        }
+
+        static int Main(string[] args) {
+            Console.Title = "LinearSVM";
+            GradientLog.OutputWriter = Console.Out;
+            GradientEngine.UseEnvironmentFromVariable();
+
+            // required before using PythonEngine
+            TensorFlowSetup.Instance.EnsureInitialized();
+
+            return ConsoleCommandDispatcher.DispatchCommand(
+               ConsoleCommandDispatcher.FindCommandsInSameAssemblyAs(typeof(LinearSvmProgram)),
+               args, Console.Out);
+        }
+
+        public int Run()
+        {
+            v1.disable_eager_execution();
+
+            Variable w, b;
+            Tensor inPlace, outPlace;
+            ndarray trainIn, trainOut, testIn, testOut;
+            using (Py.GIL()) {
+                dynamic datasets = Py.Import("sklearn.datasets");
+                dynamic slice = PythonEngine.Eval("slice");
+                var iris = datasets.load_iris();
+                dynamic firstTwoFeaturesIndex = new PyTuple(new PyObject[] {
+                    slice(null),
+                    slice(null, 2)
+                });
+                var input = iris.data.__getitem__(firstTwoFeaturesIndex);
+                IEnumerable target = iris.target;
+                var expectedOutput = target.Cast<dynamic>()
+                    .Select(l => (int)l == 0 ? 1 : -1)
+                    .ToArray();
+                int trainCount = expectedOutput.Length * 4 / 5;
+                trainIn = np.array(((IEnumerable)input).Cast<dynamic>().Take(trainCount));
+                trainOut = np.array(expectedOutput.Take(trainCount));
+                testIn = np.array(((IEnumerable)input).Cast<dynamic>().Skip(trainCount));
+                testOut = np.array(expectedOutput.Skip(trainCount));
+
+                inPlace = v1.placeholder(shape: new TensorShape(null, (int)input.shape[1]),
+                    dtype: tf.float32);
+                outPlace = v1.placeholder(shape: new TensorShape(null, 1), dtype: tf.float32);
+                w = new Variable(
+                    tf.random.normal(shape: new TensorShape((int)input.shape[1], 1)));
+                b = new Variable(tf.random.normal(shape: new TensorShape(1, 1)));
+            }
+
+            var totalLoss = Loss(w, b, inPlace, outPlace);
+            var accuracy = Inference(w, b, inPlace, outPlace);
+
+            var trainOp = new GradientDescentOptimizer(this.flags.InitialLearningRate).minimize(totalLoss);
+
+            var expectedTrainOut = trainOut.reshape(new int[] { trainOut.Length, 1 });
+            var expectedTestOut = testOut.reshape(new int[] { testOut.Length, 1 });
+
+            var sess = new Session();
+            using (sess.StartUsing())
+            {
+                var init = v1.global_variables_initializer();
+                sess.run(init);
+                for(int step = 0; step < this.flags.StepCount; step++)
+                {
+                    (ndarray @in, ndarray @out) = this.NextBatch(trainIn, trainOut, sampleCount: this.flags.BatchSize);
+                    var feed = new Dictionary<object, object> {
+                        [inPlace] = @in,
+                        [outPlace] = @out,
+                    };
+                    sess.run(trainOp, feed_dict: feed);
+
+                    var loss = sess.run(totalLoss, feed_dict: feed);
+                    var trainAcc = sess.run(accuracy, new Dictionary<object, object>
+                    {
+                        [inPlace] = trainIn,
+                        [outPlace] = expectedTrainOut,
+                    });
+                    var testAcc = sess.run(accuracy, new Dictionary<object, object>
+                    {
+                        [inPlace] = testIn,
+                        [outPlace] = expectedTestOut,
+                    });
+
+                    if ((step + 1) % 100 == 0)
+                        Console.WriteLine($"Step{step}: test acc {testAcc}, train acc {trainAcc}");
+                }
+            }
+
+            return 0;
+        }
+
+        Tensor Loss(IGraphNodeBase W, IGraphNodeBase b, Tensor inputData, Tensor targetData) {
+            Tensor logits = tf.matmul(inputData, W)  - b;
+            Tensor normTerm = tf.reduce_sum(tf.transpose(W) * W) / 2;
+            Tensor classificationLoss = tf.reduce_mean(tf.maximum(tf.constant(0.0), this.flags.Delta - logits * targetData));
+            Tensor totalLoss = this.flags.C * classificationLoss + this.flags.Reg * normTerm;
+            return totalLoss;
+        }
+
+        static dynamic Inference(IGraphNodeBase W, IGraphNodeBase b, dynamic inputData, dynamic targetData) {
+            var prediction = tf.sign_dyn(tf.subtract(tf.matmul(inputData, W), b));
+            var accuracy = tf.reduce_mean(tf.cast(tf.equal(prediction, targetData), tf.float32));
+            return accuracy;
+        }
+
+        (ndarray, ndarray) NextBatch(dynamic inputData, ndarray targetData, int? sampleCount = null) {
+            sampleCount ??= this.flags.BatchSize;
+            int max = inputData.Length;
+            var indexes = Enumerable.Range(0, sampleCount.Value)
+                .Select(_ => random.Next(max))
+                .ToArray();
+
+            ndarray inputBatch = inputData[indexes];
+            var outputBatch = (ndarray)targetData[indexes].reshape((sampleCount.Value, 1).Items());
+            if (outputBatch is null)
+                throw new InvalidOperationException();
+            return (inputBatch, outputBatch);
+        }
+
+        class ContextManager {
+            public static implicit operator ExitAction(ContextManager _) => new ExitAction();
+        }
+
+        public struct ExitAction : IDisposable
+        {
+            public ExitAction(Action onDispose) {
+                this.OnDispose = onDispose ?? throw new ArgumentNullException(nameof(onDispose));
+            }
+            public Action OnDispose { get; }
+            public void Dispose() => this.OnDispose?.Invoke();
+        }
+    }
+}

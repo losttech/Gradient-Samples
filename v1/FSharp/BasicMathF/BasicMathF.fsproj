@@ -3,12 +3,14 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFramework>netcoreapp3.1</TargetFramework>
-    <LangVersion>8.0</LangVersion>
-    <AssemblyName>SimpleApproximation</AssemblyName>
-    <RootNamespace>LostTech.Gradient.Samples</RootNamespace>
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Include="BasicMath.fs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="FSharp.Interop.Dynamic" Version="5.0.1.268" />
     <PackageReference Include="LostTech.TensorFlow" Version="2.4.1-preview1" />
   </ItemGroup>
 
