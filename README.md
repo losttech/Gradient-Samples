@@ -3,18 +3,8 @@ Samples for [LostTech.TensorFlow](https://losttech.software/gradient.html), Tens
 
 **BasicMath**- creates two constant tensors and performs simple algebraic operations on them
 
-**CharRNN** - generates semi-sensical text in the style of input. For example (Shakespeare):
-> LOST:
-> What is your name beautiful princess?
->
-> COMPUTER:
-> Gradient your horn of exemity.
->
-> GLOUCESTER:
-> how one sick up scourish, thither place and thronds the grow for these bowing.
-> 
-> MARIANA:
-> He shall speak not reverbering injurance.
+**CharRNN** - the sample was removed from 2.x samples, as it only works with TensorFlow 1.15.
+The old version is [still available in 1.15 branch](https://github.com/losttech/Gradient-Samples/tree/v1.15/CharRNN).
 
 **CSharpOrNot** - a mini-ResNet convolutional network, that guesses programming language,
 given a rectangular text block from a code file. Has a cross-platform UI demo.
