@@ -17,7 +17,7 @@
             int[] resNetFilters = { filterCount, filterCount, filterCount };
             return new Sequential(new Layer[] {
                 new Dropout(rate: 0.05),
-                Conv2D.NewDyn(filters: filterCount, kernel_size: 5, padding: "same"),
+                new Conv2D(filters: filterCount, kernel_size: 5, strides: (1,1), padding: "same"),
                 new Activation(activation),
                 new MaxPool2D(pool_size: 2),
                 new ResNetBlock(kernelSize: 3, filters: resNetFilters, activation: activation),
@@ -30,7 +30,7 @@
                 new MaxPool2D(),
                 new ResNetBlock(kernelSize: 3, filters: resNetFilters, activation: activation),
                 new ResNetBlock(kernelSize: 3, filters: resNetFilters, activation: activation),
-                new AvgPool2D(pool_size: new []{2}),
+                new AvgPool2D(pool_size: new []{2,2}),
                 new Flatten(),
                 new Dense(units: classCount, activation: tf.keras.activations.softmax_fn),
             });
