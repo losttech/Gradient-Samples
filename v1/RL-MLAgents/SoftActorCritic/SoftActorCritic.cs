@@ -167,12 +167,12 @@ namespace LostTech.Gradient.Samples.SoftActorCritic {
                 targetUpdate = tf.group(
                     GetVariables("main").Zip(GetVariables("target"))
                     .Select(((Variable main, Variable target)v)
-                        => v1.assign(v.target, v.target * (dynamic)polyak + v.main * (dynamic)(1-polyak), name: "targetUpdate"))
+                        => v1.assign_dyn(v.target, v.target * (dynamic)polyak + v.main * (dynamic)(1-polyak), name: "targetUpdate"))
                     .ToArray());
 
             var targetInit = tf.group(
                 GetVariables("main").Zip(GetVariables("target"))
-                .Select(((Variable main, Variable target) v) => v1.assign(v.target, v.main))
+                .Select(((Variable main, Variable target) v) => v1.assign_dyn(v.target, v.main))
                 .ToArray());
 
             var session = new Session();

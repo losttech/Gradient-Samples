@@ -12,6 +12,7 @@
     using mlagents_envs.side_channel.engine_configuration_channel;
     using numpy;
     using tensorflow;
+    using tensorflow.compat.v1;
     using PyFunc = PythonFunctionContainer;
     using static System.Linq.Enumerable;
     using mlagents_envs.base_env;
@@ -29,6 +30,8 @@
         static void Main(string[] args) {
             GradientEngine.UseEnvironmentFromVariable();
             TensorFlowSetup.Instance.EnsureInitialized();
+            v1.disable_eager_execution();
+
             Console.Title = "ML Agents";
 
             if (args.Length == 1)
