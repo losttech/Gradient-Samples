@@ -5,7 +5,7 @@
     using tensorflow;
     using tensorflow.keras;
     using tensorflow.keras.layers;
-    using tensorflow.optimizers;
+    using tensorflow.keras.optimizers;
 
     static class ResNetSampleProgram {
         public static void Run(int epochs = 5) {
