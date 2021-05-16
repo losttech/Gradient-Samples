@@ -56,7 +56,7 @@
 
         public Tensor __call__(Tensor input) => base.__call__(input);
 
-        public override Tensor call(IGraphNodeBase input, object? training = null, object? mask = null) {
+        public override Tensor call(object input, object? training = null, object? mask = null) {
             return this.CallImpl((Tensor)input, training);
         }
     }
