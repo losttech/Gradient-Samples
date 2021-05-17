@@ -9,7 +9,7 @@
     using numpy;
     using tensorflow;
     using tensorflow.keras.callbacks;
-    using tensorflow.optimizers;
+    using tensorflow.keras.optimizers;
     using tensorflow.python.keras.backend;
     using static CSharpOrNot;
 

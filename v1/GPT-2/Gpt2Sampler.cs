@@ -69,7 +69,7 @@
                     var nextOutputs = Step(hParams, prev[.., tf.newaxis], past: past);
                     Tensor logits = nextOutputs["logits"][.., ^1, ..] / tf.constant(temperature, dtypes.float32_ref);
                     logits = TopLogits(logits, topK: topK);
-                    var samples = v1.multinomial(logits, num_samples: 1, output_dtype: tf.int32);
+                    Tensor<int> samples = v1.multinomial_dyn(logits, num_samples: 1, output_dtype: tf.int32);
                     return new Tensor[]
                     {
                         tf.concat(new []{ past, nextOutputs["presents"]}, axis: -2),

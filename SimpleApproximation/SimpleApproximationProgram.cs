@@ -6,7 +6,7 @@
     using tensorflow;
     using tensorflow.keras;
     using tensorflow.keras.layers;
-    using tensorflow.optimizers;
+    using tensorflow.keras.optimizers;
 
     static class SimpleApproximationProgram {
         const int x0 = 10, x1 = 20;
