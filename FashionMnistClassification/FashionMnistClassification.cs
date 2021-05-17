@@ -5,7 +5,7 @@
     using tensorflow;
     using tensorflow.keras;
     using tensorflow.keras.layers;
-    using tensorflow.optimizers;
+    using tensorflow.keras.optimizers;
 
     static class FashionMnistClassification {
         static void Main() {

@@ -10,7 +10,7 @@ open numpy
 open tensorflow
 open tensorflow.keras
 open tensorflow.keras.layers
-open tensorflow.optimizers
+open tensorflow.keras.optimizers
 
 // this is no longer needed in most scenarios with 1.15, but we left it for example
 let inline (!>) (x:^a) : ^b = ((^a or ^b) : (static member op_Implicit : ^a -> ^b) x)

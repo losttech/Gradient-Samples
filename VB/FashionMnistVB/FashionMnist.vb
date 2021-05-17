@@ -2,7 +2,7 @@ Imports System
 Imports tensorflow
 Imports tensorflow.keras
 Imports tensorflow.keras.layers
-Imports tensorflow.optimizers
+Imports tensorflow.keras.optimizers
 
 Module Program
     Sub Main()
