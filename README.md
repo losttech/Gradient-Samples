@@ -18,7 +18,7 @@ Get pretrained model here: https://github.com/losttech/Gradient-Samples/releases
 **ResNetBlock** - same as FashionMnistClassification above, but shows `Model` subclassing
 to implement ResNet block.
 
-**RL-MLAgents** (not tested on 2.x) - reinforcement learning agent, that learns to play Unity 3D based games
+**RL-MLAgents** - reinforcement learning agent, that learns to play Unity 3D based games
 using Soft Actor-Critic algorithm, and Unity ML agents library. More details in
 [the blog post](http://ml.blogs.losttech.software/Reinforcement-Learning-With-Unity-ML-Agents/).
 
