@@ -10,9 +10,6 @@ The old version is [still available in 1.15 branch](https://github.com/losttech/
 given a rectangular text block from a code file. Has a cross-platform UI demo.
 Get pretrained model here: https://github.com/losttech/Gradient-Samples/releases/tag/csharp-or-not%2Fv1
 
-**GPT-2** ([v1](v1)) - latest published English [language model from OpenAI](https://blog.openai.com/better-language-models/)
-(smaller version, pretrained). Added fine-tuning from https://github.com/nshepperd/gpt-2.
-
 **FashionMnistClassification** - standard TensorFlow example, that classifies small pictures of clothes.
 
 **ResNetBlock** - same as FashionMnistClassification above, but shows `Model` subclassing
@@ -28,7 +25,11 @@ All models **can be modified and trained**.
 
 **LICENSE** - MIT for all sample code, individual samples might have different licenses (clearing that up, see individual sample folders).
 
-# See Also
+## Larger samples (in separate repositories)
+
+[**GPT-2**](https://github.com/losttech/GPT) - latest published English
+[language model from OpenAI](https://blog.openai.com/better-language-models/)
+with fine-tuning from https://github.com/nshepperd/gpt-2.
 
 [**SIREN**](https://github.com/losttech/Siren) - neural representation
 for any kind of signal (image, video, audio).
