@@ -18,8 +18,7 @@
         static void Main() {
             GradientLog.OutputWriter = Console.Out;
             GradientEngine.UseEnvironmentFromVariable();
-
-            var input = tf.keras.Input_dyn(1);
+            var input = tf.keras.Input(new TensorShape(1));
 
             var hiddenLayer = new Dense(hiddenSize, activation: tf.keras.activations.sigmoid_fn).__call__(input);
             var output = new Dense(1, activation: tf.keras.activations.sigmoid_fn).__call__(hiddenLayer);

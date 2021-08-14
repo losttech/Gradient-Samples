@@ -42,7 +42,7 @@ namespace LostTech.Gradient.Samples.SoftActorCritic {
             Tensor std = tf.exp(logStd, name: "std");
             Tensor pi;
             using(new variable_scope("pi").StartUsing())
-                pi = tf.add(mu, tf.random.normal_dyn(tf.shape_dyn(mu)) * std, name: "pi");
+                pi = tf.add(mu, tf.random.normal(tf.shape(mu)) * std, name: "pi");
             var logpPi = GaussianLikelihood(input: pi, mu: mu, logStd: logStd, name: "logpPi");
             return new Policy(mu: mu, pi: pi, logProbPi: logpPi);
         }

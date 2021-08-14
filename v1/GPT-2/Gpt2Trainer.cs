@@ -52,7 +52,7 @@ namespace LostTech.Gradient.Samples.GPT2 {
                 Tensor labels = context[.., 1..];
                 Tensor logits = output["logits"][.., ..^1];
                 var loss = tf.reduce_mean(
-                    tf.nn.sparse_softmax_cross_entropy_with_logits_dyn(
+                    tf.nn.sparse_softmax_cross_entropy_with_logits(
                         labels: labels,
                         logits: logits));
 

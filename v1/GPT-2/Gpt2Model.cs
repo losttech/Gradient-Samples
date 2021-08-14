@@ -57,8 +57,8 @@
             using (new variable_scope(scope).StartUsing())
             {
                 int nState = input.shape[-1];
-                Variable g = v1.get_variable("g", new TensorShape(nState), initializer: new constant_initializer(1));
-                Variable b = v1.get_variable("b", new TensorShape(nState), initializer: new constant_initializer(0));
+                Variable g = v1.get_variable("g", new TensorShape(nState), default(DType), initializer: new constant_initializer(1));
+                Variable b = v1.get_variable("b", new TensorShape(nState), default(DType), initializer: new constant_initializer(0));
                 Tensor mean = tf.reduce_mean(input, axis: axis, keepdims: true);
                 Tensor s = tf.reduce_mean(tf.square(input - mean), axis: axis, keepdims: true);
                 result = (input - mean) * tf.math.rsqrt(s + epsilon);
@@ -99,8 +99,8 @@
                 var start = shape.Take(shape.Count - 1);
                 object nx = shape.Last();
                 var wShape = new TensorShape(ValueTuple.Create(1, nx, nf));
-                var w = v1.get_variable("w", wShape, initializer: new random_normal_initializer(stddev: wInitialStDev));
-                var b = v1.get_variable("b", new TensorShape(nf), initializer: new constant_initializer(0));
+                var w = v1.get_variable("w", wShape, default(DType), initializer: new random_normal_initializer(stddev: wInitialStDev));
+                var b = v1.get_variable("b", new TensorShape(nf), default(DType), initializer: new constant_initializer(0));
                 result = tf.reshape_dyn(
                     tf.matmul(
                         tf.reshape_dyn(input, new[] { -1, nx }),
@@ -166,7 +166,7 @@
             using (new variable_scope(scope).StartUsing())
             {
                 var c = Conv1D(input, "c_attn", nState * 3);
-                var qkv = ((IEnumerable)tf.split_dyn(c, 3, axis: 2)).Cast<Tensor>().Select(SplitHeads).ToArray();
+                var qkv = tf.split(c, 3, axis: 2).Select(SplitHeads).ToArray();
                 var q = qkv[0];
                 var k = qkv[1];
                 var v = qkv[2];
@@ -174,7 +174,7 @@
                 present = tf.stack(new[] { k, v }, axis: 1);
                 if (!(past is null))
                 {
-                    var pastKV = tf.unstack(past, axis: 1);
+                    PythonList<Tensor> pastKV = tf.unstack(past, axis: 1);
                     k = tf.concat(new[] { pastKV[0], k }, axis: -2);
                     v = tf.concat(new[] { pastKV[1], v }, axis: -2);
                 }
@@ -237,7 +237,7 @@
         {
             Tensor tensor = tf.convert_to_tensor(value, dtype: (DType)null, name: "value");
             int ndims = tensor.shape.rank.Value;
-            return tf.tile_dyn(
+            return tf.tile(
                 tf.expand_dims(tensor, axis: 0),
                 multiples: new object[] { size }.Concat(Enumerable.Repeat((object)1, ndims)).ToArray());
         }
@@ -262,8 +262,8 @@
                 int batch = batchSeq[0];
                 dynamic sequence = batchSeq[1];
 
-                var wpe = v1.get_variable("wpe", new TensorShape(hParams["n_ctx"], hParams["n_embd"]), initializer: new random_normal_initializer(stddev: 0.01));
-                var wte = v1.get_variable("wte", new TensorShape(hParams["n_vocab"], hParams["n_embd"]), initializer: new random_normal_initializer(stddev: 0.02));
+                var wpe = v1.get_variable("wpe", new TensorShape(hParams["n_ctx"], hParams["n_embd"]), default(DType), initializer: new random_normal_initializer(stddev: 0.01));
+                var wte = v1.get_variable("wte", new TensorShape(hParams["n_vocab"], hParams["n_embd"]), default(DType), initializer: new random_normal_initializer(stddev: 0.02));
 
                 Tensor pastLen = past is null ? tf.constant(0) : tf.shape(past)[^2];
                 var h = tf.gather(wte, input) + tf.gather(wpe, PositionsFor(input, pastLen));

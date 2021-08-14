@@ -125,7 +125,7 @@
         }
 
         static dynamic Inference(IGraphNodeBase W, IGraphNodeBase b, dynamic inputData, dynamic targetData) {
-            var prediction = tf.sign_dyn(tf.subtract(tf.matmul(inputData, W), b));
+            var prediction = tf.sign(tf.subtract(tf.matmul(inputData, W), b));
             var accuracy = tf.reduce_mean(tf.cast(tf.equal(prediction, targetData), tf.float32));
             return accuracy;
         }

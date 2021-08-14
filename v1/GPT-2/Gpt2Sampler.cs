@@ -95,7 +95,7 @@
                 // https://github.com/losttech/Gradient-Samples/issues/1
                 if (!tf.test.is_gpu_available())
                     maxTokens -= tf.shape(context)[1];
-                result = tf.while_loop_dyn(
+                result = tf.while_loop(
                     cond: PythonFunctionContainer.Of<object, object, object, bool>(True),
                     body: PythonFunctionContainer.Of(new Func<object, object, object, Tensor[]>(Body)),
                     parallel_iterations: 10,
