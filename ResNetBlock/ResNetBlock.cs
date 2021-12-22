@@ -6,6 +6,7 @@
     using tensorflow;
     using tensorflow.keras;
     using tensorflow.keras.layers;
+    using tensorflow.python.keras.engine.keras_tensor;
 
     public class ResNetBlock: Model {
         const int PartCount = 3;
@@ -54,10 +55,17 @@
             return input_shape;
         }
 
-        public Tensor __call__(Tensor input) => base.__call__(input);
+        public IGraphNodeBase __call__(IGraphNodeBase input) => base.__call__(input);
 
         public override Tensor call(object input, object? training = null, object? mask = null) {
-            return this.CallImpl((Tensor)input, training);
+            return this.CallImpl((IGraphNodeBase)input, training);
         }
+
+        public Tensor call(params IGraphNodeBase[] batchTensors) {
+            var batch = tf.stack(batchTensors);
+            return this.CallImpl(batch, training: true);
+        }
+
+        public Tensor call(IGraphNodeBase inputs) => this.CallImpl(inputs, training: null);
     }
 }
