@@ -26,10 +26,10 @@ let main argv =
     GradientLog.OutputWriter <- Console.Out
 
     let struct (train, test) = tf.keras.datasets.fashion_mnist.load_data()
-    let trainImages: ndarray = train?Item1 ?/? 255.0f
-    let trainLabels = train?Item2
-    let testImages: ndarray = test?Item1 ?/? 255.0f
-    let testLabels: ndarray = test?Item2
+    let trainImages: ndarray = Dyn.getIndexer[0] train ?/? 255.0f
+    let trainLabels = Dyn.getIndexer[1] train
+    let testImages: ndarray = Dyn.getIndexer[0] test ?/? 255.0f
+    let testLabels: ndarray = Dyn.getIndexer[1] test
 
     let model = Sequential([|
         Flatten(kwargs = {| input_shape = struct (28, 28) |}.AsKwArgs());

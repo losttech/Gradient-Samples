@@ -55,7 +55,7 @@
                     slice(null),
                     slice(null, 2)
                 });
-                var input = iris.data.__getitem__(firstTwoFeaturesIndex);
+                var input = np.array(iris.data.__getitem__(firstTwoFeaturesIndex));
                 IEnumerable target = iris.target;
                 var expectedOutput = target.Cast<dynamic>()
                     .Select(l => (int)l == 0 ? 1 : -1)

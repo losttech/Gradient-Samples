@@ -12,11 +12,11 @@ Module Program
         ' requires Internet connection
         Dim data = tf.keras.datasets.fashion_mnist.load_data()
         Dim train = data.Item1
-        Dim trainImages = train.Item1 / 255.0F
-        Dim trainLabels = train.Item2
+        Dim trainImages = train(0) / 255.0F
+        Dim trainLabels = train(1)
         Dim test = data.Item2
-        Dim testImages = test.Item1 / 255.0F
-        Dim testLabels = test.Item2
+        Dim testImages = test(0) / 255.0F
+        Dim testLabels = test(1)
 
         Dim model = New Sequential(New Layer() {
             New Flatten(kwargs:=New With {.input_shape = (28, 28)}.AsKwArgs),
