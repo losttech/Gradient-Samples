@@ -2,6 +2,7 @@
     using System;
     using System.Diagnostics;
     using numpy;
+
     using tensorflow;
     using tensorflow.keras;
     using tensorflow.keras.layers;

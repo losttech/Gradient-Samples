@@ -17,10 +17,6 @@
   <ItemGroup>
     <PackageReference Include="Avalonia" Version="0.8.0" />
     <PackageReference Include="Avalonia.Desktop" Version="0.8.0" />
-    <PackageReference Include="Gradient.Runtime" Version="0.5.0-a2">
-      <NoWarn>NU1605</NoWarn>
-    </PackageReference>
-    <PackageReference Include="LostTech.NumPy" Version="0.3.0-a2"/>
     <PackageReference Include="ManyConsole.CommandLineUtils" Version="1.0.3-alpha" />
     <PackageReference Include="morelinq" Version="3.3.2" />
     <PackageReference Include="System.Drawing.Common" Version="4.7.0" />
